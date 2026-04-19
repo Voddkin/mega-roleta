@@ -90,6 +90,13 @@ const elements = {
     inputPointerColor: document.getElementById('input-pointer-color'),
     toggleAdvanced: document.getElementById('toggle-advanced'),
     optionsList: document.getElementById('options-list'),
+    btnEditRoulette: document.getElementById('btn-edit-roulette'),
+    btnSaveEdit: document.getElementById('btn-save-edit'),
+    btnCancelEdit: document.getElementById('btn-cancel-edit'),
+    toggleElimination: document.getElementById('toggle-elimination'),
+    configSection: document.querySelector('.config-section'),
+    eliminationHistoryContainer: document.getElementById('elimination-history-container'),
+    eliminationHistory: document.getElementById('elimination-history'),
     optionsCount: document.getElementById('options-count'),
     btnAddOption: document.getElementById('btn-add-option'),
     btnSpin: document.getElementById('btn-spin'),
@@ -110,6 +117,11 @@ const elements = {
 // Variáveis de Animação
 let currentAngle = 0;
 let isSpinning = false;
+let isEditing = false;
+let sessionOptions = [];
+let eliminatedOptions = [];
+let temporaryState = null;
+let lastWinningOptionId = null;
 let spinAnimation;
 
 // --- INICIALIZAÇÃO ---
@@ -188,9 +200,78 @@ function showEditor(rouletteId) {
     setTimeout(() => elements.editorView.classList.add('active'), 10);
 
     elements.btnBack.style.display = 'inline-flex';
+    currentAngle = 0;
 
-    currentAngle = 0; // Resetar ângulo ao abrir
+    initPlaySession();
+}
+
+function initPlaySession() {
+    isEditing = false;
+    elements.configSection.style.display = 'none';
+    elements.btnSpin.style.display = 'block';
+    elements.btnEditRoulette.style.display = 'flex';
+
+    const current = getCurrentRoulette();
+    sessionOptions = JSON.parse(JSON.stringify(current.options));
+    eliminatedOptions = [];
+
+    updateEliminationHistoryUI();
+    drawRoulette();
+}
+
+function startEditing() {
+    if (isSpinning) return;
+    isEditing = true;
+    elements.configSection.style.display = 'block';
+    elements.btnSpin.style.display = 'none';
+    elements.btnEditRoulette.style.display = 'none';
+
+    const current = getCurrentRoulette();
+    temporaryState = JSON.parse(JSON.stringify(current));
+
     renderEditor();
+    drawRoulette();
+}
+
+function saveEditing() {
+    saveData();
+    initPlaySession();
+}
+
+function cancelEditing() {
+    if (temporaryState) {
+        const index = appState.roulettes.findIndex(r => r.id === temporaryState.id);
+        if (index !== -1) {
+            appState.roulettes[index] = temporaryState;
+            saveData();
+        }
+    }
+    initPlaySession();
+}
+
+function updateEliminationHistoryUI() {
+    const r = getCurrentRoulette();
+    if (!r || !r.eliminationMode || eliminatedOptions.length === 0) {
+        elements.eliminationHistoryContainer.style.display = 'none';
+        elements.eliminationHistory.innerHTML = '';
+        return;
+    }
+
+    elements.eliminationHistoryContainer.style.display = 'block';
+    elements.eliminationHistory.innerHTML = '';
+
+    eliminatedOptions.forEach((opt, idx) => {
+        const badge = document.createElement('div');
+        badge.style.padding = '4px 10px';
+        badge.style.borderRadius = '20px';
+        badge.style.fontSize = '0.8rem';
+        badge.style.fontWeight = 'bold';
+        badge.style.color = opt.textColor;
+        badge.style.background = opt.bgColor;
+        badge.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+        badge.textContent = `${idx + 1}º: ${opt.name}`;
+        elements.eliminationHistory.appendChild(badge);
+    });
 }
 
 // --- RENDERIZAÇÃO DO DASHBOARD ---
@@ -268,10 +349,11 @@ function drawMiniature(canvasId, r) {
 
     if (r.options.length === 0) return;
 
-    const totalWeight = r.options.reduce((sum, opt) => sum + opt.weight, 0);
+    const activeOptions = isEditing ? r.options : sessionOptions;
+    const totalWeight = activeOptions.reduce((sum, opt) => sum + opt.weight, 0);
     let startAngle = 0;
 
-    for (let i = 0; i < r.options.length; i++) {
+    for (let i = 0; i < activeOptions.length; i++) {
         const opt = r.options[i];
         const sliceAngle = (opt.weight / totalWeight) * 2 * Math.PI;
 
@@ -423,6 +505,7 @@ function createNewRoulette(name) {
     appState.roulettes.push(newRoul);
     saveData();
     showEditor(newRoul.id);
+    startEditing();
 }
 
 function duplicateCurrentRoulette() {
@@ -482,10 +565,11 @@ function drawRoulette() {
 
     ctx.clearRect(0, 0, width, height);
 
-    const totalWeight = r.options.reduce((sum, opt) => sum + opt.weight, 0);
+    const activeOptions = isEditing ? r.options : sessionOptions;
+    const totalWeight = activeOptions.reduce((sum, opt) => sum + opt.weight, 0);
     let startAngle = currentAngle;
 
-    for (let i = 0; i < r.options.length; i++) {
+    for (let i = 0; i < activeOptions.length; i++) {
         const opt = r.options[i];
         const sliceAngle = (opt.weight / totalWeight) * 2 * Math.PI;
 
@@ -560,7 +644,8 @@ function spin() {
     if (isSpinning) return;
 
     const r = getCurrentRoulette();
-    if (r.options.length < 2) {
+    const activeOptions = isEditing ? r.options : sessionOptions;
+    if (activeOptions.length < 2) {
         alert("Adicione pelo menos 2 opções para girar.");
         return;
     }
@@ -613,7 +698,8 @@ function stopRotate() {
 
 function determineWinner() {
     const r = getCurrentRoulette();
-    const totalWeight = r.options.reduce((sum, opt) => sum + opt.weight, 0);
+    const activeOptions = isEditing ? r.options : sessionOptions;
+    const totalWeight = activeOptions.reduce((sum, opt) => sum + opt.weight, 0);
 
     let pointerAngle = (1.5 * Math.PI) - currentAngle;
 
@@ -623,7 +709,7 @@ function determineWinner() {
     let accumulatedAngle = 0;
     let winningOption = null;
 
-    for (let i = 0; i < r.options.length; i++) {
+    for (let i = 0; i < activeOptions.length; i++) {
         const opt = r.options[i];
         const sliceAngle = (opt.weight / totalWeight) * 2 * Math.PI;
 
@@ -634,13 +720,14 @@ function determineWinner() {
         accumulatedAngle += sliceAngle;
     }
 
-    if (!winningOption) winningOption = r.options[0];
+    if (!winningOption) winningOption = activeOptions[0];
 
     showWinnerModal(winningOption);
 }
 
 // --- MODAL E CONFETES ---
 function showWinnerModal(option) {
+    lastWinningOptionId = option.id;
     elements.winnerTitle.textContent = option.name;
     if (option.image) {
         elements.winnerImage.src = option.image;
@@ -659,12 +746,32 @@ function hideWinnerModal() {
     elements.modal.classList.remove('show');
     elements.confettiCanvas.classList.remove('show');
     stopConfetti();
+
+    const r = getCurrentRoulette();
+    if (r && r.eliminationMode && lastWinningOptionId && !isEditing) {
+        const optionIndex = sessionOptions.findIndex(o => o.id === lastWinningOptionId);
+        if (optionIndex !== -1 && sessionOptions.length > 1) {
+            eliminatedOptions.push(sessionOptions[optionIndex]);
+            sessionOptions.splice(optionIndex, 1);
+            updateEliminationHistoryUI();
+            drawRoulette();
+        }
+    }
+    lastWinningOptionId = null;
 }
 
 // --- EVENT LISTENERS ---
 function setupEventListeners() {
     // Top Bar
     elements.themeSelect.addEventListener('change', (e) => applyTheme(e.target.value));
+    elements.btnEditRoulette.addEventListener('click', startEditing);
+    elements.btnSaveEdit.addEventListener('click', saveEditing);
+    elements.btnCancelEdit.addEventListener('click', cancelEditing);
+    elements.toggleElimination.addEventListener('change', (e) => {
+        const current = getCurrentRoulette();
+        current.eliminationMode = e.target.checked;
+        saveData();
+    });
     elements.btnBack.addEventListener('click', () => {
         if(!isSpinning) showDashboard();
     });
