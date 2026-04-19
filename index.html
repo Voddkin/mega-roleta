@@ -114,7 +114,10 @@
     <!-- Modal de Vitória -->
     <div id="winner-modal" class="modal-overlay">
         <div class="modal-content glass-panel">
-            <h2 id="winner-title">Temos um ganhador!</h2>
+            <h2 id="winner-title" style="white-space: pre-wrap; word-break: break-word;">Temos um ganhador!</h2>
+            <div id="winner-image-container" style="display: none; margin: 15px 0;">
+                <img id="winner-image" src="" alt="Winner Image" style="max-width: 100%; max-height: 250px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
+            </div>
             <div id="winner-message" class="winner-message"></div>
             <button id="btn-close-modal" class="btn btn-primary">Fechar</button>
         </div>
@@ -123,6 +126,7 @@
     <!-- Canvas para os confetes -->
     <canvas id="confetti-canvas"></canvas>
 
+    <script src="db.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
