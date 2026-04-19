@@ -143,11 +143,11 @@ function renderDashboard() {
 
         card.innerHTML = `
             <div class="card-canvas-container">
-                <canvas id="${canvasId}" width="120" height="120"></canvas>
+                <canvas id="${canvasId}" width="130" height="130"></canvas>
             </div>
             <div class="card-info">
                 <h3 title="${r.name}">${r.name}</h3>
-                <p>${r.options.length} opções</p>
+                <p>${r.options.length} opções configuradas</p>
             </div>
             <div class="card-actions">
                 <button class="btn btn-outline btn-sm" onclick="showEditor('${r.id}')">Editar / Girar</button>
@@ -189,7 +189,7 @@ function drawMiniature(canvasId, r) {
         ctx.fillStyle = opt.bgColor;
         ctx.fill();
         ctx.lineWidth = 1;
-        ctx.strokeStyle = '#222';
+        ctx.strokeStyle = 'rgba(0,0,0,0.2)';
         ctx.stroke();
 
         startAngle += sliceAngle;
@@ -229,7 +229,7 @@ function renderOptionsList() {
             <div class="option-row advanced-field">
                 <label style="font-size: 0.8rem">Peso:</label>
                 <input type="number" min="1" max="100" value="${opt.weight}" data-id="${opt.id}" data-field="weight" style="width: 60px;">
-                <input type="text" class="input-text" value="${opt.message}" data-id="${opt.id}" data-field="message" placeholder="Mensagem de Vitória">
+                <input type="text" class="input-text" value="${opt.message}" data-id="${opt.id}" data-field="message" placeholder="Mensagem de Vitória" style="flex: 1;">
             </div>
         `;
         elements.optionsList.appendChild(item);
@@ -370,7 +370,7 @@ function drawRoulette() {
         const opt = r.options[i];
         const sliceAngle = (opt.weight / totalWeight) * 2 * Math.PI;
 
-        // Desenhar Fatias
+        // Desenhar Fatias com estilo premium
         ctx.beginPath();
         ctx.moveTo(centerX, centerY);
         ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
@@ -378,28 +378,36 @@ function drawRoulette() {
         ctx.fillStyle = opt.bgColor;
         ctx.fill();
         ctx.lineWidth = 1.5;
+
         // Obter cor da borda via variavel CSS dependendo do tema, default transparente/escuro
         const borderColor = getComputedStyle(document.body).getPropertyValue('--panel-border').trim() || 'rgba(0,0,0,0.1)';
         ctx.strokeStyle = borderColor;
         ctx.stroke();
 
-        // Desenhar Texto Inteligente
+        // Desenhar Texto Inteligente com sombra para contraste
         ctx.save();
         ctx.translate(centerX, centerY);
         ctx.rotate(startAngle + sliceAngle / 2);
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
+
+        // Sombra leve no texto para sempre ser legível
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+        ctx.shadowBlur = 4;
+        ctx.shadowOffsetX = 1;
+        ctx.shadowOffsetY = 1;
+
         ctx.fillStyle = opt.textColor;
 
         let text = opt.name;
-        const maxTextWidth = radius - 40; // Margem
+        const maxTextWidth = radius - 50; // Margem maior para não colar na borda
 
         // Algoritmo para diminuir a fonte se o texto for grande
-        let fontSize = 20; // Fonte base
+        let fontSize = 22; // Fonte base um pouco maior
         ctx.font = `bold ${fontSize}px Poppins, sans-serif`;
 
-        // Reduzir o tamanho da fonte até caber ou chegar no mínimo (10px)
-        while(ctx.measureText(text).width > maxTextWidth && fontSize > 10) {
+        // Reduzir o tamanho da fonte até caber ou chegar no mínimo (12px)
+        while(ctx.measureText(text).width > maxTextWidth && fontSize > 12) {
             fontSize -= 1;
             ctx.font = `bold ${fontSize}px Poppins, sans-serif`;
         }
@@ -412,7 +420,7 @@ function drawRoulette() {
             text += "...";
         }
 
-        ctx.fillText(text, radius - 25, 0);
+        ctx.fillText(text, radius - 30, 0); // Puxar mais pro centro
         ctx.restore();
 
         startAngle += sliceAngle;
@@ -434,10 +442,10 @@ function spin() {
     elements.btnBack.disabled = true; // Impedir voltar enquanto gira
 
     // Configurações do giro
-    const spinTimeTotal = Math.random() * 3000 + 4000; // 4 a 7 segundos
+    const spinTimeTotal = Math.random() * 4000 + 4000; // 4 a 8 segundos
     let spinTime = 0;
 
-    const startVelocity = 0.2 + Math.random() * 0.1;
+    const startVelocity = 0.25 + Math.random() * 0.1;
 
     function easeOutBack(t, b, c, d, s = 1.70158) {
         t /= d;
@@ -453,7 +461,7 @@ function spin() {
             return;
         }
 
-        const angleChange = easeOutBack(spinTime, startVelocity, -startVelocity, spinTimeTotal, 0.5);
+        const angleChange = easeOutBack(spinTime, startVelocity, -startVelocity, spinTimeTotal, 0.3);
         currentAngle += angleChange;
 
         if (currentAngle >= 2 * Math.PI) currentAngle -= 2 * Math.PI;
@@ -506,7 +514,7 @@ function determineWinner() {
 // --- MODAL E CONFETES ---
 function showWinnerModal(option) {
     elements.winnerTitle.textContent = option.name;
-    elements.winnerMessage.textContent = option.message ? option.message : "Parabéns!";
+    elements.winnerMessage.textContent = option.message ? option.message : "Fantástico! Você foi sorteado.";
     elements.modal.classList.add('show');
     elements.confettiCanvas.classList.add('show');
     startConfetti();
@@ -528,7 +536,7 @@ function setupEventListeners() {
 
     // Dashboard
     elements.btnNewRouletteDash.addEventListener('click', () => {
-        const name = prompt("Nome da nova roleta:", "Nova Roleta");
+        const name = prompt("Nome da nova roleta:", "Nova Roleta Premium");
         if (name) createNewRoulette(name);
     });
 
@@ -567,7 +575,7 @@ function setupEventListeners() {
     });
 }
 
-// --- SISTEMA DE CONFETES SIMPLES ---
+// --- SISTEMA DE CONFETES PREMIUM ---
 let confettiParticles = [];
 let confettiAnimationId;
 
@@ -580,15 +588,15 @@ function startConfetti() {
     confettiParticles = [];
     const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39', '#FFEB3B', '#FFC107', '#FF9800', '#FF5722'];
 
-    for (let i = 0; i < 70; i++) {
+    for (let i = 0; i < 100; i++) {
         confettiParticles.push({
             x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height * 0.3 - (canvas.height * 0.3),
-            w: Math.random() * 8 + 4,
-            h: Math.random() * 8 + 4,
+            y: Math.random() * canvas.height * 0.2 - (canvas.height * 0.2),
+            w: Math.random() * 10 + 5,
+            h: Math.random() * 10 + 5,
             color: colors[Math.floor(Math.random() * colors.length)],
-            vy: Math.random() * 6 + 2,
-            vx: Math.random() * 6 - 3,
+            vy: Math.random() * 5 + 3,
+            vx: Math.random() * 8 - 4,
             rot: Math.random() * 360,
             rotSpeed: Math.random() * 10 - 5,
             opacity: 1
@@ -608,9 +616,9 @@ function startConfetti() {
             p.x += p.vx;
             p.rot += p.rotSpeed;
 
-            p.vx *= 0.99;
-            if (p.y > canvas.height * 0.7) {
-                p.opacity -= 0.02;
+            p.vx *= 0.99; // Atrito do ar
+            if (p.y > canvas.height * 0.6) {
+                p.opacity -= 0.015; // Fade out mais suave
             }
 
             ctx.save();
@@ -618,7 +626,10 @@ function startConfetti() {
             ctx.rotate(p.rot * Math.PI / 180);
             ctx.globalAlpha = Math.max(0, p.opacity);
             ctx.fillStyle = p.color;
-            ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+            // Confetes mais arredondados
+            ctx.beginPath();
+            ctx.roundRect(-p.w / 2, -p.h / 2, p.w, p.h, 2);
+            ctx.fill();
             ctx.restore();
         });
 
