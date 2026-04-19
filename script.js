@@ -1,3 +1,55 @@
+
+// --- UTILS & IMAGES ---
+// Image Cache to avoid DataCloneError in IndexedDB
+const imageCache = new Map();
+
+function escapeHTML(str) {
+    if (typeof str !== 'string') return '';
+    return str.replace(/[&<>'"]/g,
+        tag => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            "'": '&#39;',
+            '"': '&quot;'
+        }[tag])
+    );
+}
+
+function processHighQualityImage(file) {
+    return new Promise((resolve, reject) => {
+        if (!file.type.match('image.*')) {
+            reject(new Error("Apenas imagens são permitidas."));
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_SIZE = 2048;
+                let width = img.width;
+                let height = img.height;
+                const size = Math.min(width, height);
+                const startX = (width - size) / 2;
+                const startY = (height - size) / 2;
+                let targetSize = size > MAX_SIZE ? MAX_SIZE : size;
+                canvas.width = targetSize;
+                canvas.height = targetSize;
+                const ctx = canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(img, startX, startY, size, size, 0, 0, targetSize, targetSize);
+                resolve(canvas.toDataURL('image/webp', 0.95));
+            };
+            img.onerror = () => reject(new Error("Erro ao carregar a imagem."));
+            img.src = e.target.result;
+        };
+        reader.onerror = () => reject(new Error("Erro ao ler o arquivo."));
+        reader.readAsDataURL(file);
+    });
+}
+
 // --- ESTADO DA APLICAÇÃO ---
 let appState = {
     theme: 'dark',
@@ -47,6 +99,8 @@ const elements = {
     // Modal
     modal: document.getElementById('winner-modal'),
     winnerTitle: document.getElementById('winner-title'),
+    winnerImageContainer: document.getElementById('winner-image-container'),
+    winnerImage: document.getElementById('winner-image'),
     winnerMessage: document.getElementById('winner-message'),
     btnCloseModal: document.getElementById('btn-close-modal'),
     confettiCanvas: document.getElementById('confetti-canvas'),
@@ -59,8 +113,16 @@ let isSpinning = false;
 let spinAnimation;
 
 // --- INICIALIZAÇÃO ---
-function init() {
-    loadData();
+async function init() {
+    if (typeof loadFromDB === 'function') {
+        const saved = await loadFromDB();
+        if (saved) {
+            appState = saved;
+            if (!appState.roulettes || appState.roulettes.length === 0) resetData();
+        } else resetData();
+    } else {
+        loadData();
+    }
     setupEventListeners();
     applyTheme(appState.theme);
     showDashboard(); // Começar sempre no dashboard
@@ -93,7 +155,8 @@ function resetData() {
 }
 
 function saveData() {
-    localStorage.setItem('megaRouletteData', JSON.stringify(appState));
+    if (typeof saveToDB === 'function') saveToDB(appState);
+    else localStorage.setItem('megaRouletteData', JSON.stringify(appState));
 }
 
 function getCurrentRoulette() {
@@ -141,12 +204,22 @@ function renderDashboard() {
         // Criar um canvas miniatura
         const canvasId = `thumb-${r.id}`;
 
+        const profileImageHTML = r.profileImage ? `<img src="${r.profileImage}" class="profile-thumb" alt="Profile" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />` : `<canvas id="${canvasId}" width="130" height="130"></canvas>`;
+
         card.innerHTML = `
-            <div class="card-canvas-container">
-                <canvas id="${canvasId}" width="130" height="130"></canvas>
+            <div class="card-canvas-container" style="position: relative;">
+                ${profileImageHTML}
+                <div style="position: absolute; bottom: -10px; right: -10px; display: flex; gap: 5px;">
+                    <label class="upload-profile-btn" title="Fazer Upload de Imagem" style="background: var(--primary-color); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+                        📁
+                        <input type="file" style="display:none;" accept="image/png, image/jpeg, image/webp" data-id="${r.id}" class="profile-image-input">
+                    </label>
+                    <button class="btn btn-primary" title="Escolher Ícone Padrão" onclick="showDefaultIconsGallery('${r.id}')" style="border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0;">🎨</button>
+                </div>
+                ${r.profileImage ? `<button class="remove-profile-btn" title="Remover Foto" data-id="${r.id}" style="position: absolute; top: 0; right: 0; background: var(--danger-color); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">X</button>` : ''}
             </div>
             <div class="card-info">
-                <h3 title="${r.name}">${r.name}</h3>
+                <h3 title="${escapeHTML(r.name)}">${escapeHTML(r.name)}</h3>
                 <p>${r.options.length} opções configuradas</p>
             </div>
             <div class="card-actions">
@@ -156,8 +229,28 @@ function renderDashboard() {
 
         elements.roulettesGrid.appendChild(card);
 
-        // Desenhar a miniatura
-        setTimeout(() => drawMiniature(canvasId, r), 0);
+        if (!r.profileImage) {
+            setTimeout(() => drawMiniature(canvasId, r), 0);
+        }
+
+        const cardCanvas = card.querySelector('.card-canvas-container');
+        cardCanvas.addEventListener('dragover', (e) => { e.preventDefault(); cardCanvas.style.opacity = '0.5'; });
+        cardCanvas.addEventListener('dragleave', (e) => { e.preventDefault(); cardCanvas.style.opacity = '1'; });
+        cardCanvas.addEventListener('drop', (e) => {
+            e.preventDefault();
+            cardCanvas.style.opacity = '1';
+            const file = e.dataTransfer.files[0];
+            if (file) handleProfileImageUpload({ target: { files: [file], getAttribute: () => r.id } });
+        });
+    });
+
+    document.querySelectorAll('.profile-image-input').forEach(input => input.addEventListener('change', handleProfileImageUpload));
+    document.querySelectorAll('.remove-profile-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = e.target.getAttribute('data-id');
+            const r = appState.roulettes.find(ro => ro.id === id);
+            if(r) { r.profileImage = null; saveData(); renderDashboard(); }
+        });
     });
 }
 
@@ -221,32 +314,58 @@ function renderOptionsList() {
 
         item.innerHTML = `
             <div class="option-row">
-                <input type="text" class="input-text" value="${opt.name}" data-id="${opt.id}" data-field="name" placeholder="Nome da Opção" title="${opt.name}">
-                <input type="color" value="${opt.bgColor}" data-id="${opt.id}" data-field="bgColor" title="Cor de Fundo">
-                <input type="color" value="${opt.textColor}" data-id="${opt.id}" data-field="textColor" title="Cor do Texto">
+                <input type="text" class="input-text" value="${escapeHTML(opt.name)}" data-id="${opt.id}" data-field="name" placeholder="Nome da Opção" title="${escapeHTML(opt.name)}">
+                <input type="color" value="${escapeHTML(opt.bgColor)}" data-id="${opt.id}" data-field="bgColor" title="Cor de Fundo">
+                <input type="color" value="${escapeHTML(opt.textColor)}" data-id="${opt.id}" data-field="textColor" title="Cor do Texto">
                 <button class="btn btn-danger btn-sm" onclick="removeOption('${opt.id}')">X</button>
             </div>
-            <div class="option-row advanced-field">
-                <label style="font-size: 0.8rem">Peso:</label>
-                <input type="number" min="1" max="100" value="${opt.weight}" data-id="${opt.id}" data-field="weight" style="width: 60px;">
-                <input type="text" class="input-text" value="${opt.message}" data-id="${opt.id}" data-field="message" placeholder="Mensagem de Vitória" style="flex: 1;">
+            <div class="option-row advanced-field" style="align-items: center; flex-wrap: wrap;">
+                <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 5px;">
+                    <input type="checkbox" ${opt.hideText ? 'checked' : ''} data-id="${opt.id}" data-field="hideText" title="Ocultar Texto na Roleta" style="width: auto;" class="option-checkbox">
+                    Ocultar Texto
+                </label>
+                <label style="font-size: 0.8rem; margin-left: 10px;">Peso:</label>
+                <input type="number" min="1" max="100" value="${opt.weight}" data-id="${opt.id}" data-field="weight" style="width: 50px;">
+                <input type="text" class="input-text" value="${escapeHTML(opt.message)}" data-id="${opt.id}" data-field="message" placeholder="Mensagem de Vitória" style="flex: 1; margin-left: 5px;">
+            </div>
+            <div class="option-row advanced-field" style="align-items: center; justify-content: flex-start; gap: 10px;">
+                <label style="font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 5px;" class="btn btn-outline btn-sm option-dropzone" data-id="${opt.id}">
+                    📷 ${opt.image ? 'Trocar Imagem' : 'Add Imagem (Arraste)'}
+                    <input type="file" style="display:none;" accept="image/png, image/jpeg, image/webp" data-id="${opt.id}" class="option-image-input">
+                </label>
+                ${opt.image ? `<button class="btn btn-danger btn-sm option-image-remove" data-id="${opt.id}">Remover Img</button>` : ''}
             </div>
         `;
         elements.optionsList.appendChild(item);
     });
 
-    // Adicionar listeners para os inputs gerados dinamicamente
-    const inputs = elements.optionsList.querySelectorAll('input');
-    inputs.forEach(input => {
-        input.addEventListener('change', handleOptionChange);
-        // Atualização em tempo real para cores e nomes
-        if(input.type === 'color' || (input.type === 'text' && input.dataset.field === 'name')) {
+    elements.optionsList.querySelectorAll('input').forEach(input => {
+        if (input.classList.contains('option-image-input')) {
+            input.addEventListener('change', (e) => handleOptionImageUpload(e, input.dataset.id));
+        } else if (input.type === 'checkbox') {
+            input.addEventListener('change', handleOptionCheckboxChange);
+        } else if (input.type === 'color') {
+            input.addEventListener('change', handleOptionChange);
+        } else {
             input.addEventListener('input', handleOptionChange);
         }
     });
-}
 
-// --- GERENCIAMENTO DE DADOS ---
+    elements.optionsList.querySelectorAll('.option-image-remove').forEach(btn => {
+        btn.addEventListener('click', () => removeOptionImage(btn.dataset.id));
+    });
+
+    elements.optionsList.querySelectorAll('.option-dropzone').forEach(dropzone => {
+        dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.style.opacity = '0.5'; });
+        dropzone.addEventListener('dragleave', (e) => { e.preventDefault(); dropzone.style.opacity = '1'; });
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.style.opacity = '1';
+            const file = e.dataTransfer.files[0];
+            if (file) handleOptionImageUpload({target: {files: [file]}}, dropzone.dataset.id);
+        });
+    });
+}
 function handleOptionChange(e) {
     const id = e.target.getAttribute('data-id');
     const field = e.target.getAttribute('data-field');
@@ -370,58 +489,67 @@ function drawRoulette() {
         const opt = r.options[i];
         const sliceAngle = (opt.weight / totalWeight) * 2 * Math.PI;
 
-        // Desenhar Fatias com estilo premium
+                // Path para a fatia
         ctx.beginPath();
         ctx.moveTo(centerX, centerY);
         ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
         ctx.closePath();
+
         ctx.fillStyle = opt.bgColor;
         ctx.fill();
-        ctx.lineWidth = 1.5;
 
-        // Obter cor da borda via variavel CSS dependendo do tema, default transparente/escuro
+        if (opt.image) {
+            ctx.save();
+            ctx.clip();
+
+            let imgObj = imageCache.get(opt.image);
+            if (!imgObj) {
+                imgObj = new Image();
+                imgObj.src = opt.image;
+                imageCache.set(opt.image, imgObj);
+                imgObj.onload = () => { if (!isSpinning) drawRoulette(); };
+            }
+
+            if (imgObj && imgObj.complete && imgObj.naturalWidth > 0) {
+                const imgSize = radius * 2;
+                ctx.translate(centerX, centerY);
+                ctx.rotate(startAngle + sliceAngle / 2);
+                ctx.drawImage(imgObj, 0, -imgSize/2, imgSize, imgSize);
+                ctx.rotate(-(startAngle + sliceAngle / 2));
+                ctx.translate(-centerX, -centerY);
+            }
+            ctx.restore();
+        }
+
+        ctx.lineWidth = 1.5;
         const borderColor = getComputedStyle(document.body).getPropertyValue('--panel-border').trim() || 'rgba(0,0,0,0.1)';
         ctx.strokeStyle = borderColor;
         ctx.stroke();
 
-        // Desenhar Texto Inteligente com sombra para contraste
-        ctx.save();
-        ctx.translate(centerX, centerY);
-        ctx.rotate(startAngle + sliceAngle / 2);
-        ctx.textAlign = 'right';
-        ctx.textBaseline = 'middle';
-
-        // Sombra leve no texto para sempre ser legível
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-        ctx.shadowBlur = 4;
-        ctx.shadowOffsetX = 1;
-        ctx.shadowOffsetY = 1;
-
-        ctx.fillStyle = opt.textColor;
-
-        let text = opt.name;
-        const maxTextWidth = radius - 50; // Margem maior para não colar na borda
-
-        // Algoritmo para diminuir a fonte se o texto for grande
-        let fontSize = 22; // Fonte base um pouco maior
-        ctx.font = `bold ${fontSize}px Poppins, sans-serif`;
-
-        // Reduzir o tamanho da fonte até caber ou chegar no mínimo (12px)
-        while(ctx.measureText(text).width > maxTextWidth && fontSize > 12) {
-            fontSize -= 1;
+        if (opt.hideText !== true) {
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(startAngle + sliceAngle / 2);
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+            ctx.shadowBlur = 6;
+            ctx.shadowOffsetX = 1;
+            ctx.shadowOffsetY = 1;
+            ctx.fillStyle = opt.textColor;
+            let text = opt.name;
+            let fontSize = 24;
             ctx.font = `bold ${fontSize}px Poppins, sans-serif`;
-        }
-
-        // Se ainda for muito grande, cortar com reticências
-        if(ctx.measureText(text).width > maxTextWidth) {
-            while(ctx.measureText(text + "...").width > maxTextWidth && text.length > 0) {
-                text = text.slice(0, -1);
+            let textWidth = ctx.measureText(text).width;
+            while ((textWidth > radius * 0.7 || fontSize > (sliceAngle * radius) * 0.4) && fontSize > 10) {
+                fontSize--;
+                ctx.font = `bold ${fontSize}px Poppins, sans-serif`;
+                textWidth = ctx.measureText(text).width;
             }
-            text += "...";
+            if (textWidth > radius * 0.75) { text = text.substring(0, Math.floor(text.length * 0.8)) + '...'; }
+            ctx.fillText(text, radius * 0.85, 0);
+            ctx.restore();
         }
-
-        ctx.fillText(text, radius - 30, 0); // Puxar mais pro centro
-        ctx.restore();
 
         startAngle += sliceAngle;
     }
@@ -514,6 +642,13 @@ function determineWinner() {
 // --- MODAL E CONFETES ---
 function showWinnerModal(option) {
     elements.winnerTitle.textContent = option.name;
+    if (option.image) {
+        elements.winnerImage.src = option.image;
+        elements.winnerImageContainer.style.display = 'block';
+    } else {
+        elements.winnerImageContainer.style.display = 'none';
+        elements.winnerImage.src = '';
+    }
     elements.winnerMessage.textContent = option.message ? option.message : "Fantástico! Você foi sorteado.";
     elements.modal.classList.add('show');
     elements.confettiCanvas.classList.add('show');
@@ -656,3 +791,97 @@ window.addEventListener('resize', () => {
 
 // Inicializar app
 window.onload = init;
+
+async function handleProfileImageUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const id = e.target.getAttribute('data-id') || (e.target.getAttribute && e.target.getAttribute());
+    try {
+        const compressedBase64 = await processHighQualityImage(file);
+        const roulette = appState.roulettes.find(r => r.id === id);
+        if (roulette) {
+            roulette.profileImage = compressedBase64;
+            saveData();
+            renderDashboard();
+        }
+    } catch (err) { alert(err.message); }
+}
+
+function showDefaultIconsGallery(rouletteId) {
+    const galleryId = `gallery-${rouletteId}`;
+    let gallery = document.getElementById(galleryId);
+    if (gallery) { gallery.remove(); return; }
+
+    gallery = document.createElement('div');
+    gallery.id = galleryId;
+    gallery.style.position = 'absolute';
+    gallery.style.top = '100%';
+    gallery.style.left = '50%';
+    gallery.style.transform = 'translateX(-50%)';
+    gallery.style.background = 'var(--panel-bg)';
+    gallery.style.border = '1px solid var(--panel-border)';
+    gallery.style.borderRadius = '8px';
+    gallery.style.padding = '10px';
+    gallery.style.display = 'flex';
+    gallery.style.gap = '10px';
+    gallery.style.zIndex = '100';
+    gallery.style.boxShadow = '0 4px 12px rgba(0,0,0,0.5)';
+
+    const icons = [{ color: '#EF4444', icon: '🎰' }, { color: '#3B82F6', icon: '🎡' }, { color: '#10B981', icon: '🎯' }, { color: '#F59E0B', icon: '🎲' }];
+
+    icons.forEach(data => {
+        const c = document.createElement('canvas');
+        c.width = 64; c.height = 64;
+        c.style.cursor = 'pointer'; c.style.borderRadius = '50%'; c.style.width = '32px'; c.style.height = '32px';
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = data.color; ctx.beginPath(); ctx.arc(32, 32, 32, 0, Math.PI * 2); ctx.fill();
+        ctx.font = '32px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(data.icon, 32, 32);
+
+        c.addEventListener('click', () => {
+            const r = appState.roulettes.find(ro => ro.id === rouletteId);
+            if(r) { r.profileImage = c.toDataURL('image/png'); saveData(); renderDashboard(); }
+        });
+        gallery.appendChild(c);
+    });
+
+    const card = document.querySelector(`.roulette-card [data-id="${rouletteId}"]`).closest('.card-canvas-container');
+    card.appendChild(gallery);
+}
+
+function handleOptionCheckboxChange(e) {
+    const id = e.target.getAttribute('data-id');
+    const field = e.target.getAttribute('data-field');
+    const current = getCurrentRoulette();
+    const option = current.options.find(o => o.id === id);
+    if (option) {
+        option[field] = e.target.checked;
+        saveData();
+        drawRoulette();
+    }
+}
+
+async function handleOptionImageUpload(e, explicitId) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const id = explicitId || e.target.getAttribute('data-id');
+    try {
+        const compressedBase64 = await processHighQualityImage(file);
+        const current = getCurrentRoulette();
+        const option = current.options.find(o => o.id === id);
+        if (option) {
+            option.image = compressedBase64;
+            saveData();
+            renderEditor();
+        }
+    } catch (err) { alert("Erro ao processar a imagem. " + err.message); }
+}
+
+function removeOptionImage(id) {
+    const current = getCurrentRoulette();
+    const option = current.options.find(o => o.id === id);
+    if (option) {
+        option.image = null;
+        saveData();
+        renderEditor();
+    }
+}
