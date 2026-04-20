@@ -292,21 +292,21 @@ function renderDashboard() {
                 ${profileImageHTML}
                 <div style="position: absolute; bottom: -10px; right: -10px; display: flex; gap: 5px;">
                     <label class="upload-profile-btn" title="Fazer Upload de Imagem" style="background: var(--primary-color); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
-                        📁
+                        <i class="fa-solid fa-folder-open"></i>
                         <input type="file" style="display:none;" accept="image/png, image/jpeg, image/webp" data-id="${r.id}" class="profile-image-input">
                     </label>
-                    <button class="btn btn-primary" title="Escolher Ícone Padrão" onclick="showDefaultIconsGallery('${r.id}')" style="border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0;">🎨</button>
+                    <button class="btn btn-primary" title="Escolher Ícone Padrão" onclick="showDefaultIconsGallery('${r.id}')" style="border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0;"><i class="fa-solid fa-palette"></i></button>
                 </div>
-                ${r.profileImage ? `<button class="remove-profile-btn" title="Remover Foto" data-id="${r.id}" style="position: absolute; top: 0; right: 0; background: var(--danger-color); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">X</button>` : ''}
+                ${r.profileImage ? `<button class="remove-profile-btn" title="Remover Foto" data-id="${r.id}" style="position: absolute; top: 0; right: 0; background: var(--danger-color); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"><i class="fa-solid fa-xmark"></i></button>` : ''}
             </div>
             <div class="card-info">
                 <h3 title="${escapeHTML(r.name)}">${escapeHTML(r.name)}</h3>
                 <p>${r.options.length} opções configuradas</p>
             </div>
-            <div class="card-actions" style="display: flex; gap: 8px;">
+            <div class="card-actions" style="display: flex; gap: 8px; width: 100%;">
                 <button class="btn btn-primary btn-sm" style="flex: 1;" onclick="showEditor('${r.id}')">Abrir Roleta</button>
-                <button class="btn btn-outline btn-sm" style="width: 38px; padding: 0; display: flex; align-items: center; justify-content: center;" title="Duplicar Roleta" onclick="duplicateSpecificRoulette('${r.id}')">📄</button>
-                <button class="btn btn-danger btn-sm" style="width: 38px; padding: 0; display: flex; align-items: center; justify-content: center;" title="Excluir Roleta" onclick="deleteSpecificRoulette('${r.id}')">🗑️</button>
+                <button class="btn btn-outline btn-sm" style="flex-shrink: 0; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; aspect-ratio: 1/1;" title="Duplicar Roleta" onclick="duplicateSpecificRoulette('${r.id}')"><i class="fa-solid fa-copy" style="font-size: 1.1rem; color: var(--text-color);"></i></button>
+                <button class="btn btn-danger btn-sm" style="flex-shrink: 0; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; aspect-ratio: 1/1;" title="Excluir Roleta" onclick="deleteSpecificRoulette('${r.id}')"><i class="fa-solid fa-trash" style="font-size: 1.1rem;"></i></button>
             </div>
         `;
 
@@ -421,16 +421,25 @@ function renderOptionsList() {
         item.className = 'option-item';
 
         // Thumbnail Logic
-        const thumbHTML = opt.image ? `<img src="${opt.image}" style="width: 32px; height: 32px; border-radius: 4px; object-fit: cover; border: 1px solid var(--panel-border);" alt="Thumb">` : '';
+        const thumbHTML = opt.image ? `<img src="${opt.image}" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover; border: 1px solid var(--panel-border); flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" alt="Thumb">` : '';
 
         item.innerHTML = `
-            <div class="option-row" style="gap: 5px;">
+            <div class="drag-handle" title="Arraste para reordenar" style="width: 100%; text-align: center; color: var(--text-color); opacity: 0.3; cursor: grab; padding-bottom: 5px; margin-top: -5px; font-size: 1.2rem;">
+                <i class="fa-solid fa-grip-vertical"></i>
+            </div>
+            <div class="option-row" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: nowrap; gap: 8px; width: 100%;">
                 ${thumbHTML}
-                <input type="text" class="input-text" value="${escapeHTML(opt.name)}" data-id="${opt.id}" data-field="name" placeholder="Nome" title="${escapeHTML(opt.name)}" style="padding: 6px; flex: 1;">
-                <input type="color" value="${escapeHTML(opt.bgColor)}" data-id="${opt.id}" data-field="bgColor" title="Fundo">
-                <input type="color" value="${escapeHTML(opt.textColor)}" data-id="${opt.id}" data-field="textColor" title="Texto">
-                <button class="btn btn-outline btn-sm" onclick="duplicateOption('${opt.id}')" style="padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;" title="Duplicar">📄</button>
-                <button class="btn btn-danger btn-sm" onclick="removeOption('${opt.id}')" style="padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;" title="Remover">X</button>
+                <input type="text" class="input-text" value="${escapeHTML(opt.name)}" data-id="${opt.id}" data-field="name" placeholder="Nome" title="${escapeHTML(opt.name)}" style="padding: 8px; flex: 1; min-width: 0;">
+
+                <div style="display: flex; gap: 4px; align-items: center; flex-shrink: 0;">
+                    <input type="color" value="${escapeHTML(opt.bgColor)}" data-id="${opt.id}" data-field="bgColor" title="Fundo" style="width: 30px; height: 30px; padding: 0; border: none; border-radius: 50%; cursor: pointer; flex-shrink: 0; overflow: hidden; appearance: none; -webkit-appearance: none;">
+                    <input type="color" value="${escapeHTML(opt.textColor)}" data-id="${opt.id}" data-field="textColor" title="Texto" style="width: 30px; height: 30px; padding: 0; border: none; border-radius: 50%; cursor: pointer; flex-shrink: 0; overflow: hidden; appearance: none; -webkit-appearance: none;">
+                </div>
+
+                <div style="display: flex; gap: 4px; align-items: center; flex-shrink: 0;">
+                    <button class="btn btn-outline btn-sm" onclick="duplicateOption('${opt.id}')" style="padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" title="Duplicar"><i class="fa-solid fa-copy"></i></button>
+                    <button class="btn btn-danger btn-sm" onclick="removeOption('${opt.id}')" style="padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" title="Remover"><i class="fa-solid fa-xmark"></i></button>
+                </div>
             </div>
             <div class="option-row advanced-field" style="align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 5px;">
                 <label style="font-size: 0.75rem; display: flex; align-items: center; gap: 3px;">
@@ -444,7 +453,7 @@ function renderOptionsList() {
             </div>
             <div class="option-row advanced-field" style="align-items: center; justify-content: space-between; margin-top: 5px;">
                 <label style="font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 5px; margin: 0; flex: 1; justify-content: center;" class="btn btn-outline btn-sm option-dropzone" data-id="${opt.id}">
-                    📷 ${opt.image ? 'Trocar Imagem' : 'Imagem (Arraste)'}
+                    <i class="fa-solid fa-camera"></i> ${opt.image ? 'Trocar Imagem' : 'Imagem (Arraste)'}
                     <input type="file" style="display:none;" accept="image/png, image/jpeg, image/webp" data-id="${opt.id}" class="option-image-input">
                 </label>
                 ${opt.image ? `<button class="btn btn-danger btn-sm option-image-remove" data-id="${opt.id}" style="margin-left: 5px; padding: 4px 8px; font-size: 0.75rem;">Remover</button>` : ''}
@@ -469,7 +478,7 @@ function renderOptionsList() {
         btn.addEventListener('click', () => removeOptionImage(btn.dataset.id));
     });
 
-    elements.optionsList.querySelectorAll('.option-dropzone').forEach(dropzone => {
+        elements.optionsList.querySelectorAll('.option-dropzone').forEach(dropzone => {
         dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.style.opacity = '0.5'; });
         dropzone.addEventListener('dragleave', (e) => { e.preventDefault(); dropzone.style.opacity = '1'; });
         dropzone.addEventListener('drop', (e) => {
@@ -479,6 +488,28 @@ function renderOptionsList() {
             if (file) handleOptionImageUpload({target: {files: [file]}}, dropzone.dataset.id);
         });
     });
+
+    // Inicializar SortableJS para Drag and Drop de opções
+    if (window.Sortable) {
+        // Destroi se já existir pra não acumular
+        if (elements.optionsList._sortable) {
+            elements.optionsList._sortable.destroy();
+        }
+        elements.optionsList._sortable = Sortable.create(elements.optionsList, {
+            handle: '.drag-handle', // Usa a área com os pontinhos
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            onEnd: function(evt) {
+                const current = getCurrentRoulette();
+                // Reordenar o array baseado no movimento
+                const movedItem = current.options.splice(evt.oldIndex, 1)[0];
+                current.options.splice(evt.newIndex, 0, movedItem);
+
+                saveData();
+                drawRoulette();
+            }
+        });
+    }
 }
 function handleOptionChange(e) {
     const id = e.target.getAttribute('data-id');
