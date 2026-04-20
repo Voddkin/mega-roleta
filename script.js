@@ -220,6 +220,7 @@ function initPlaySession() {
 }
 
 function startEditing() {
+    if (isSpinning) return; // Edge case protected
     if (isSpinning) return;
     isEditing = true;
     elements.configSection.style.display = 'block';
@@ -349,11 +350,10 @@ function drawMiniature(canvasId, r) {
 
     if (r.options.length === 0) return;
 
-    const activeOptions = isEditing ? r.options : sessionOptions;
-    const totalWeight = activeOptions.reduce((sum, opt) => sum + opt.weight, 0);
+    const totalWeight = r.options.reduce((sum, opt) => sum + opt.weight, 0);
     let startAngle = 0;
 
-    for (let i = 0; i < activeOptions.length; i++) {
+    for (let i = 0; i < r.options.length; i++) {
         const opt = r.options[i];
         const sliceAngle = (opt.weight / totalWeight) * 2 * Math.PI;
 
@@ -570,7 +570,7 @@ function drawRoulette() {
     let startAngle = currentAngle;
 
     for (let i = 0; i < activeOptions.length; i++) {
-        const opt = r.options[i];
+        const opt = activeOptions[i];
         const sliceAngle = (opt.weight / totalWeight) * 2 * Math.PI;
 
                 // Path para a fatia
@@ -710,7 +710,7 @@ function determineWinner() {
     let winningOption = null;
 
     for (let i = 0; i < activeOptions.length; i++) {
-        const opt = r.options[i];
+        const opt = activeOptions[i];
         const sliceAngle = (opt.weight / totalWeight) * 2 * Math.PI;
 
         if (pointerAngle >= accumulatedAngle && pointerAngle < accumulatedAngle + sliceAngle) {
@@ -729,6 +729,8 @@ function determineWinner() {
 function showWinnerModal(option) {
     lastWinningOptionId = option.id;
     elements.winnerTitle.textContent = option.name;
+    elements.winnerTitle.style.wordBreak = 'break-word';
+    elements.winnerTitle.style.maxWidth = '100%';
     if (option.image) {
         elements.winnerImage.src = option.image;
         elements.winnerImageContainer.style.display = 'block';
