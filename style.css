@@ -495,6 +495,11 @@ h1 {
     width: 100%;
     gap: 2.5rem;
     align-items: flex-start; /* Impede que os painéis estiquem desnecessariamente */
+    padding-bottom: 3rem; /* Espaço pro final da tela */
+}
+
+.roulette-section {
+    margin-bottom: 2rem; /* Espaço para quando estiver no mobile em coluna */
 }
 
 @media (max-width: 900px) {
@@ -617,8 +622,18 @@ h1 {
     flex-wrap: wrap; /* Previne overflow de botões */
     gap: 15px;
     margin-bottom: 2rem;
-    padding-bottom: 1rem;
+    padding-bottom: 1.5rem; /* Mais respiro para box shadow */
     border-bottom: 1px solid var(--panel-border);
+    overflow: visible; /* Garante que os botões não sumam */
+}
+
+/* Remover overflows impeditivos nos parents */
+.config-section, .glass-panel {
+    overflow: visible !important;
+}
+
+.config-scroll {
+    overflow-y: visible; /* Se os botoes explodirem a caixa, eles não vão ser cortados ou dar scroll feio */
 }
 
 .config-header-row h2 {
@@ -661,23 +676,41 @@ h1 {
 }
 
 .options-list {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Responsivo por padrão */
     gap: 1rem;
+    justify-content: center;
+}
+
+/* Força 1 coluna apenas no mobile caso grid quebre layout bizarro */
+@media (max-width: 600px) {
+    .options-list {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* Option Cards Premium */
 .option-item {
     background: var(--input-bg);
     border: 1px solid var(--input-border);
-    padding: 1.2rem;
+    padding: 1rem;
     border-radius: var(--border-radius);
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px; /* Mais compacto para caber lado a lado */
     transition: all var(--transition-speed) ease;
     animation: slideFadeIn 0.4s var(--transition-bounce) forwards;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.option-row input[type="color"] {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    flex-shrink: 0;
 }
 
 .option-item:hover {
@@ -1021,19 +1054,32 @@ input:checked + .slider:before { transform: translateX(22px); }
 
 @media (max-width: 600px) {
     .header-content {
-        flex-direction: column;
+        flex-direction: row; /* Volta pra row mas com flex wrap */
+        flex-wrap: wrap;
         justify-content: center;
         align-items: center;
         gap: 15px;
     }
 
     #btn-back {
-        position: static; /* No mobile, o header fica em coluna, entao a posicao estatica funciona melhor */
+        position: relative;
+        left: auto;
+        flex: 0 0 auto;
     }
 
     .header-content h1 {
-        position: static;
+        position: relative;
+        left: auto;
         transform: none;
+        flex: 1 1 100%; /* Força o titulo para uma linha inteira isolada no topo/meio */
+        text-align: center;
+        order: -1; /* Joga o titulo pro topo absoluto */
+    }
+
+    .theme-selector {
+        margin: 0;
+        width: auto;
+        justify-content: center;
     }
 
     .theme-selector {
