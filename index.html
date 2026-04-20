@@ -53,11 +53,12 @@
         </section>
 
         <!-- Visão 2: Editor / Roleta -->
-        <section id="editor-view" class="view-section" style="display: none;">
+        <section id="editor-view" class="view-section editor-layout" style="display: none;">
             <!-- Painel Esquerdo: Roleta -->
             <section class="roulette-section glass-panel">
-                <div class="roulette-header">
-                    <h2 id="current-roulette-title" class="roulette-title-display">Minha Roleta</h2>
+                <div class="roulette-header" style="display: flex; align-items: center; justify-content: center; width: 100%; position: relative; gap: 15px;">
+                    <h2 id="current-roulette-title" class="roulette-title-display" style="margin:0;">Minha Roleta</h2>
+                    <button id="btn-edit-roulette" class="btn btn-outline btn-sm" style="border-radius: 50%; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;" title="Editar Roleta">✏️</button>
                 </div>
 
                 <div class="canvas-container">
@@ -66,6 +67,10 @@
                 </div>
 
                 <button id="btn-spin" class="btn btn-spin">GIRAR A ROLETA</button>
+                <div id="elimination-history-container" style="display: none; margin-top: 20px; width: 100%;">
+                    <h4 style="margin-bottom: 10px; font-size: 0.9rem; opacity: 0.8; text-align: center;">Ordem de Eliminação:</h4>
+                    <div id="elimination-history" style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px;"></div>
+                </div>
             </section>
 
             <!-- Painel Direito: Configurações -->
@@ -73,7 +78,9 @@
                 <div class="config-scroll">
                     <div class="config-header-row">
                         <h2>Configurações</h2>
-                        <div class="config-actions">
+                        <div class="config-actions" style="display: flex; gap: 5px;">
+                            <button id="btn-save-edit" class="btn btn-success btn-sm">Salvar</button>
+                            <button id="btn-cancel-edit" class="btn btn-danger btn-sm">Cancelar</button>
                             <button id="btn-duplicate-roulette" class="btn btn-outline btn-sm" title="Duplicar">Copiar</button>
                             <button id="btn-delete-roulette" class="btn btn-danger btn-sm" title="Excluir">🗑</button>
                         </div>
@@ -90,12 +97,19 @@
                 </div>
 
                 <div class="advanced-toggle-container">
-                    <label class="switch">
-                        <input type="checkbox" id="toggle-advanced">
-                        <span class="slider round"></span>
-                    </label>
-                    <span>Modo Avançado (Pesos e Mensagens)</span>
-                </div>
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-advanced">
+                            <span class="slider round"></span>
+                        </label>
+                        <span>Modo Avançado (Pesos e Mensagens)</span>
+                    </div>
+                    <div class="advanced-toggle-container" style="margin-top: 10px;">
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-elimination">
+                            <span class="slider round"></span>
+                        </label>
+                        <span>Modo Eliminação</span>
+                    </div>
 
                 <div class="options-header">
                     <h3>Opções (<span id="options-count">0</span>)</h3>

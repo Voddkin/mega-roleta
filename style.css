@@ -292,6 +292,30 @@ body::after {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: relative;
+}
+
+#btn-back {
+    position: absolute;
+    left: 0;
+    z-index: 10;
+}
+
+.header-content h1 {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0;
+    white-space: nowrap;
+    z-index: 1;
+}
+
+.theme-selector {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Alinhamento claro da label com o select */
+    margin-left: auto; /* Empurra pro lado direito com absoluto no titulo */
+    z-index: 10;
 }
 
 h1 {
@@ -346,9 +370,16 @@ h1 {
 
 .view-section.active {
     display: flex;
-    flex-direction: column;
     opacity: 1;
     transform: translateY(0);
+}
+
+#dashboard-view.active {
+    flex-direction: column;
+}
+
+#editor-view.active {
+    flex-direction: row;
 }
 
 /* Dashboard View */
@@ -583,6 +614,8 @@ h1 {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap; /* Previne overflow de botões */
+    gap: 15px;
     margin-bottom: 2rem;
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--panel-border);
@@ -596,6 +629,7 @@ h1 {
 .config-actions {
     display: flex;
     gap: 8px;
+    flex-wrap: wrap; /* Previne overflow */
 }
 
 .config-group {
@@ -955,4 +989,74 @@ input:checked + .slider:before { transform: translateX(22px); }
     height: 100%;
     border-radius: 50%;
     object-fit: cover;
+}
+
+
+.upload-profile-btn, .option-dropzone {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease, filter 0.2s;
+}
+.upload-profile-btn:hover, .option-dropzone:hover {
+    transform: scale(1.05) translateY(-2px);
+    filter: brightness(1.2);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+.upload-profile-btn:active, .option-dropzone:active {
+    transform: scale(0.95);
+}
+
+
+/* REGRAS RESPONSIVAS AUDITADAS (Mobile First / Edge Cases) */
+@media (max-width: 900px) {
+    .editor-layout {
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .roulette-section, .config-section {
+        width: 100% !important;
+        max-width: 500px;
+    }
+}
+
+@media (max-width: 600px) {
+    .header-content {
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+    }
+
+    #btn-back {
+        position: static; /* No mobile, o header fica em coluna, entao a posicao estatica funciona melhor */
+    }
+
+    .header-content h1 {
+        position: static;
+        transform: none;
+    }
+
+    .theme-selector {
+        margin: 0;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .option-row {
+        flex-direction: column;
+        align-items: stretch !important;
+    }
+
+    .option-row input[type="color"], .option-row button {
+        width: 100%;
+    }
+
+    .advanced-field {
+        align-items: flex-start !important;
+    }
+}
+
+/* Tratamento de quebra de texto longo (word-wrap) na lista de opções para manter as divs consistentes */
+.input-text {
+    text-overflow: ellipsis;
 }
