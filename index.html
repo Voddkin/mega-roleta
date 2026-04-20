@@ -47,7 +47,7 @@
         <section id="dashboard-view" class="view-section active">
             <div class="dashboard-header">
                 <h2>Minhas Roletas</h2>
-                <button id="btn-new-roulette" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Criar Nova Roleta</button>
+
             </div>
             <div id="roulettes-grid" class="roulettes-grid">
                 <!-- Cards injetados via JS -->
@@ -83,6 +83,7 @@
                         <div class="config-actions" style="display: flex; gap: 5px;">
                             <button id="btn-save-edit" class="btn btn-success btn-sm">Salvar</button>
                             <button id="btn-cancel-edit" class="btn btn-danger btn-sm">Cancelar</button>
+                            <button id="btn-save-template" class="btn btn-outline btn-sm" title="Salvar como Modelo"><i class="fa-solid fa-star"></i></button>
 
                         </div>
                     </div>
@@ -126,6 +127,52 @@
 
     </main>
 
+
+    <!-- Modal de Criação (Templates) -->
+    <div id="create-modal" class="modal-overlay">
+        <div class="modal-content glass-panel" style="width: 90%; max-width: 600px; padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--panel-border); padding-bottom: 10px; margin-bottom: 15px;">
+                <h2 style="margin: 0; font-size: 1.3rem;">Nova Roleta</h2>
+                <div style="display: flex; gap: 10px;">
+                    <button id="tab-blank" class="btn btn-outline btn-sm active" title="Criar do Zero" style="width: 40px; height: 40px; border-radius: 8px; display: flex; justify-content: center; align-items: center;"><i class="fa-solid fa-file-circle-plus"></i></button>
+                    <button id="tab-template" class="btn btn-outline btn-sm" title="Criar a partir de Modelo" style="width: 40px; height: 40px; border-radius: 8px; display: flex; justify-content: center; align-items: center;"><i class="fa-solid fa-layer-group"></i></button>
+                </div>
+            </div>
+
+            <!-- Area de preview generico -->
+            <div style="display: flex; justify-content: center; margin-bottom: 15px;">
+                <canvas id="preview-canvas" width="150" height="150" style="border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.3); background: var(--bg-color); border: 2px solid var(--panel-border);"></canvas>
+            </div>
+
+            <!-- Formulário Blank -->
+            <div id="create-blank-area">
+                <label style="font-size: 0.9rem; font-weight: 500;">Nome da Roleta</label>
+                <input type="text" id="create-roulette-name" class="input-text" placeholder="Ex: Minha Nova Roleta..." style="width: 100%; padding: 12px; margin-top: 5px; font-size: 1rem; border-radius: 8px;">
+            </div>
+
+            <!-- Templates Area (Hidden default) -->
+            <div id="create-template-area" style="display: none; flex-direction: column; gap: 15px;">
+                <div>
+                    <label style="font-size: 0.9rem; font-weight: 500; display: block; margin-bottom: 8px;">Seus Modelos (Salvos)</label>
+                    <div id="user-templates-list" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px;" class="config-scroll">
+                        <div style="color: rgba(255,255,255,0.5); font-size: 0.85rem; padding: 10px;">Nenhum modelo salvo. Salve uma roleta usando o ícone de disquete nas configurações.</div>
+                    </div>
+                </div>
+                <div>
+                    <label style="font-size: 0.9rem; font-weight: 500; display: block; margin-bottom: 8px;">Modelos Padrões</label>
+                    <div id="default-templates-list" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px;" class="config-scroll">
+                        <!-- Gerados via JS -->
+                    </div>
+                </div>
+                <input type="hidden" id="selected-template-id" value="">
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <button id="btn-cancel-create" class="btn btn-outline">Cancelar</button>
+                <button id="btn-confirm-create" class="btn btn-primary">Criar Roleta</button>
+            </div>
+        </div>
+    </div>
     <!-- Modal de Vitória -->
     <div id="winner-modal" class="modal-overlay">
         <div class="modal-content glass-panel">
@@ -143,5 +190,6 @@
 
     <script src="db.js"></script>
     <script src="script.js"></script>
+<div id="toast-container" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
 </body>
 </html>
