@@ -714,13 +714,14 @@ h1 {
 }
 
 .option-row input[type="color"] {
-    width: 30px;
-    height: 30px;
+    width: 25px;
+    height: 25px;
     padding: 0;
     border: none;
     border-radius: 50%;
     cursor: pointer;
     flex-shrink: 0;
+    display: inline-block;
     overflow: hidden;
     appearance: none;
     -webkit-appearance: none;
@@ -1141,4 +1142,43 @@ input:checked + .slider:before { transform: translateX(22px); }
 
 .drag-handle:active {
     cursor: grabbing !important;
+}
+
+
+/* Ghost Card Creation */
+.ghost-card {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border: 2px dashed rgba(255,255,255,0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-height: 250px; /* Match approximately the height of other cards */
+}
+
+.ghost-card:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: var(--primary-color);
+    transform: translateY(-5px);
+}
+
+.ghost-card i {
+    font-size: 3rem;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 1rem;
+    transition: color 0.3s ease;
+}
+
+.ghost-card:hover i {
+    color: var(--primary-color);
+}
+
+.ghost-card span {
+    font-weight: 600;
+    color: rgba(255,255,255,0.7);
+    font-size: 1.1rem;
 }
