@@ -84,8 +84,7 @@ const elements = {
 
     // Editor Elements
     currentRouletteTitle: document.getElementById('current-roulette-title'),
-    btnDuplicateRoulette: document.getElementById('btn-duplicate-roulette'),
-    btnDeleteRoulette: document.getElementById('btn-delete-roulette'),
+
     inputRouletteName: document.getElementById('input-roulette-name'),
     inputPointerColor: document.getElementById('input-pointer-color'),
     toggleAdvanced: document.getElementById('toggle-advanced'),
@@ -304,8 +303,10 @@ function renderDashboard() {
                 <h3 title="${escapeHTML(r.name)}">${escapeHTML(r.name)}</h3>
                 <p>${r.options.length} opções configuradas</p>
             </div>
-            <div class="card-actions">
-                <button class="btn btn-outline btn-sm" onclick="showEditor('${r.id}')">Editar / Girar</button>
+            <div class="card-actions" style="display: flex; gap: 8px;">
+                <button class="btn btn-primary btn-sm" style="flex: 1;" onclick="showEditor('${r.id}')">Abrir Roleta</button>
+                <button class="btn btn-outline btn-sm" style="width: 38px; padding: 0; display: flex; align-items: center; justify-content: center;" title="Duplicar Roleta" onclick="duplicateSpecificRoulette('${r.id}')">📄</button>
+                <button class="btn btn-danger btn-sm" style="width: 38px; padding: 0; display: flex; align-items: center; justify-content: center;" title="Excluir Roleta" onclick="deleteSpecificRoulette('${r.id}')">🗑️</button>
             </div>
         `;
 
@@ -361,10 +362,35 @@ function drawMiniature(canvasId, r) {
         ctx.moveTo(centerX, centerY);
         ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
         ctx.closePath();
+
         ctx.fillStyle = opt.bgColor;
         ctx.fill();
+
+        if (opt.image) {
+            ctx.save();
+            ctx.clip();
+
+            let imgObj = imageCache.get(opt.image);
+            if (!imgObj) {
+                imgObj = new Image();
+                imgObj.src = opt.image;
+                imageCache.set(opt.image, imgObj);
+                imgObj.onload = () => { drawMiniature(canvasId, r); };
+            }
+
+            if (imgObj && imgObj.complete && imgObj.naturalWidth > 0) {
+                const imgSize = radius * 2;
+                ctx.translate(centerX, centerY);
+                ctx.rotate(startAngle + sliceAngle / 2);
+                ctx.drawImage(imgObj, 0, -imgSize/2, imgSize, imgSize);
+                ctx.rotate(-(startAngle + sliceAngle / 2));
+                ctx.translate(-centerX, -centerY);
+            }
+            ctx.restore();
+        }
+
         ctx.lineWidth = 1;
-        ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+        ctx.strokeStyle = 'rgba(0,0,0,0.1)';
         ctx.stroke();
 
         startAngle += sliceAngle;
@@ -394,28 +420,34 @@ function renderOptionsList() {
         const item = document.createElement('div');
         item.className = 'option-item';
 
+        // Thumbnail Logic
+        const thumbHTML = opt.image ? `<img src="${opt.image}" style="width: 32px; height: 32px; border-radius: 4px; object-fit: cover; border: 1px solid var(--panel-border);" alt="Thumb">` : '';
+
         item.innerHTML = `
-            <div class="option-row">
-                <input type="text" class="input-text" value="${escapeHTML(opt.name)}" data-id="${opt.id}" data-field="name" placeholder="Nome da Opção" title="${escapeHTML(opt.name)}">
-                <input type="color" value="${escapeHTML(opt.bgColor)}" data-id="${opt.id}" data-field="bgColor" title="Cor de Fundo">
-                <input type="color" value="${escapeHTML(opt.textColor)}" data-id="${opt.id}" data-field="textColor" title="Cor do Texto">
-                <button class="btn btn-danger btn-sm" onclick="removeOption('${opt.id}')">X</button>
+            <div class="option-row" style="gap: 5px;">
+                ${thumbHTML}
+                <input type="text" class="input-text" value="${escapeHTML(opt.name)}" data-id="${opt.id}" data-field="name" placeholder="Nome" title="${escapeHTML(opt.name)}" style="padding: 6px; flex: 1;">
+                <input type="color" value="${escapeHTML(opt.bgColor)}" data-id="${opt.id}" data-field="bgColor" title="Fundo">
+                <input type="color" value="${escapeHTML(opt.textColor)}" data-id="${opt.id}" data-field="textColor" title="Texto">
+                <button class="btn btn-outline btn-sm" onclick="duplicateOption('${opt.id}')" style="padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;" title="Duplicar">📄</button>
+                <button class="btn btn-danger btn-sm" onclick="removeOption('${opt.id}')" style="padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;" title="Remover">X</button>
             </div>
-            <div class="option-row advanced-field" style="align-items: center; flex-wrap: wrap;">
-                <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 5px;">
-                    <input type="checkbox" ${opt.hideText ? 'checked' : ''} data-id="${opt.id}" data-field="hideText" title="Ocultar Texto na Roleta" style="width: auto;" class="option-checkbox">
-                    Ocultar Texto
+            <div class="option-row advanced-field" style="align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 5px;">
+                <label style="font-size: 0.75rem; display: flex; align-items: center; gap: 3px;">
+                    <input type="checkbox" ${opt.hideText ? 'checked' : ''} data-id="${opt.id}" data-field="hideText" title="Ocultar Texto"> Ocultar Texto
                 </label>
-                <label style="font-size: 0.8rem; margin-left: 10px;">Peso:</label>
-                <input type="number" min="1" max="100" value="${opt.weight}" data-id="${opt.id}" data-field="weight" style="width: 50px;">
-                <input type="text" class="input-text" value="${escapeHTML(opt.message)}" data-id="${opt.id}" data-field="message" placeholder="Mensagem de Vitória" style="flex: 1; margin-left: 5px;">
+                <label style="font-size: 0.75rem; margin-left: auto;">Peso:</label>
+                <input type="number" min="1" max="100" value="${opt.weight}" data-id="${opt.id}" data-field="weight" style="width: 45px; padding: 4px;">
             </div>
-            <div class="option-row advanced-field" style="align-items: center; justify-content: flex-start; gap: 10px;">
-                <label style="font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 5px;" class="btn btn-outline btn-sm option-dropzone" data-id="${opt.id}">
-                    📷 ${opt.image ? 'Trocar Imagem' : 'Add Imagem (Arraste)'}
+            <div class="option-row advanced-field" style="margin-top: 5px;">
+                <input type="text" class="input-text" value="${escapeHTML(opt.message)}" data-id="${opt.id}" data-field="message" placeholder="Mensagem de Vitória..." style="padding: 6px; width: 100%; font-size: 0.85rem;">
+            </div>
+            <div class="option-row advanced-field" style="align-items: center; justify-content: space-between; margin-top: 5px;">
+                <label style="font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 5px; margin: 0; flex: 1; justify-content: center;" class="btn btn-outline btn-sm option-dropzone" data-id="${opt.id}">
+                    📷 ${opt.image ? 'Trocar Imagem' : 'Imagem (Arraste)'}
                     <input type="file" style="display:none;" accept="image/png, image/jpeg, image/webp" data-id="${opt.id}" class="option-image-input">
                 </label>
-                ${opt.image ? `<button class="btn btn-danger btn-sm option-image-remove" data-id="${opt.id}">Remover Img</button>` : ''}
+                ${opt.image ? `<button class="btn btn-danger btn-sm option-image-remove" data-id="${opt.id}" style="margin-left: 5px; padding: 4px 8px; font-size: 0.75rem;">Remover</button>` : ''}
             </div>
         `;
         elements.optionsList.appendChild(item);
@@ -785,8 +817,7 @@ function setupEventListeners() {
     });
 
     // Editor Actions
-    elements.btnDuplicateRoulette.addEventListener('click', duplicateCurrentRoulette);
-    elements.btnDeleteRoulette.addEventListener('click', deleteCurrentRoulette);
+
 
     elements.inputRouletteName.addEventListener('change', (e) => {
         const r = getCurrentRoulette();
@@ -992,5 +1023,52 @@ function removeOptionImage(id) {
         option.image = null;
         saveData();
         renderEditor();
+    }
+}
+
+function duplicateOption(id) {
+    const current = getCurrentRoulette();
+    if (!current) return;
+
+    const index = current.options.findIndex(o => o.id === id);
+    if (index === -1) return;
+
+    const sourceOpt = current.options[index];
+    const newOpt = JSON.parse(JSON.stringify(sourceOpt));
+    newOpt.id = Date.now().toString() + Math.floor(Math.random() * 1000);
+    newOpt.name = sourceOpt.name + " (Cópia)";
+
+    // Insere logo abaixo
+    current.options.splice(index + 1, 0, newOpt);
+
+    saveData();
+    renderEditor();
+    drawRoulette();
+}
+
+function duplicateSpecificRoulette(id) {
+    const source = appState.roulettes.find(r => r.id === id);
+    if (!source) return;
+
+    const duplicate = JSON.parse(JSON.stringify(source));
+    duplicate.id = Date.now().toString() + Math.floor(Math.random()*1000);
+    duplicate.name = duplicate.name + " (Cópia)";
+
+    appState.roulettes.push(duplicate);
+    saveData();
+    renderDashboard();
+}
+function deleteSpecificRoulette(id) {
+    if (appState.roulettes.length <= 1) {
+        alert("Você não pode excluir a última roleta!");
+        return;
+    }
+    if (confirm("Tem certeza que deseja excluir esta roleta?")) {
+        appState.roulettes = appState.roulettes.filter(r => r.id !== id);
+        if (appState.currentRouletteId === id) {
+            appState.currentRouletteId = appState.roulettes[0].id;
+        }
+        saveData();
+        renderDashboard();
     }
 }
