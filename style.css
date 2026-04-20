@@ -633,7 +633,17 @@ h1 {
 }
 
 .config-scroll {
-    overflow-y: visible; /* Se os botoes explodirem a caixa, eles não vão ser cortados ou dar scroll feio */
+    overflow-y: visible;
+    height: auto;
+    min-height: min-content;
+}
+.options-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Responsivo por padrão */
+    gap: 1rem;
+    justify-content: center;
+    align-items: start; /* Prevents stretching items to max height unnecessarily */
+    height: auto;
 }
 
 .config-header-row h2 {
@@ -704,13 +714,23 @@ h1 {
 }
 
 .option-row input[type="color"] {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     padding: 0;
     border: none;
-    border-radius: 4px;
+    border-radius: 50%;
     cursor: pointer;
     flex-shrink: 0;
+    overflow: hidden;
+    appearance: none;
+    -webkit-appearance: none;
+}
+.option-row input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+.option-row input[type="color"]::-webkit-color-swatch {
+    border: none;
+    border-radius: 50%;
 }
 
 .option-item:hover {
@@ -1093,7 +1113,7 @@ input:checked + .slider:before { transform: translateX(22px); }
         align-items: stretch !important;
     }
 
-    .option-row input[type="color"], .option-row button {
+    .option-row > button {
         width: 100%;
     }
 
@@ -1105,4 +1125,20 @@ input:checked + .slider:before { transform: translateX(22px); }
 /* Tratamento de quebra de texto longo (word-wrap) na lista de opções para manter as divs consistentes */
 .input-text {
     text-overflow: ellipsis;
+}
+
+
+/* SortableJS Ghost Classes */
+.sortable-ghost {
+    opacity: 0.4;
+    background: var(--primary-color) !important;
+    box-shadow: 0 0 15px rgba(0,0,0,0.5) inset;
+}
+
+.drag-handle {
+    cursor: grab !important;
+}
+
+.drag-handle:active {
+    cursor: grabbing !important;
 }
