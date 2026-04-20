@@ -54,7 +54,8 @@ function processHighQualityImage(file) {
 let appState = {
     theme: 'dark',
     currentRouletteId: null,
-    roulettes: []
+    roulettes: [],
+    userTemplates: []
 };
 
 // Objeto padrão para uma nova roleta
@@ -68,6 +69,30 @@ const defaultRoulette = (name = "Minha Roleta") => ({
         { id: Date.now().toString() + '3', name: "Opção 3", bgColor: "#F44336", textColor: "#ffffff", weight: 1, message: "Você ganhou a Opção 3!" }
     ]
 });
+
+
+// --- TEMPLATES PADRÕES ---
+const defaultTemplates = [
+    {
+        id: 'tpl_1', name: 'Cara ou Coroa',
+        options: [
+            { id: 'o1', name: 'Cara', bgColor: '#3B82F6', textColor: '#ffffff', weight: 1, message: 'Deu Cara!' },
+            { id: 'o2', name: 'Coroa', bgColor: '#EF4444', textColor: '#ffffff', weight: 1, message: 'Deu Coroa!' }
+        ]
+    },
+    {
+        id: 'tpl_2', name: 'Dias da Semana',
+        options: [
+            { id: 'o1', name: 'Segunda', bgColor: '#6366f1', textColor: '#fff', weight: 1 },
+            { id: 'o2', name: 'Terça', bgColor: '#8b5cf6', textColor: '#fff', weight: 1 },
+            { id: 'o3', name: 'Quarta', bgColor: '#d946ef', textColor: '#fff', weight: 1 },
+            { id: 'o4', name: 'Quinta', bgColor: '#f43f5e', textColor: '#fff', weight: 1 },
+            { id: 'o5', name: 'Sexta', bgColor: '#f97316', textColor: '#fff', weight: 1 },
+            { id: 'o6', name: 'Sábado', bgColor: '#eab308', textColor: '#fff', weight: 1 },
+            { id: 'o7', name: 'Domingo', bgColor: '#14b8a6', textColor: '#fff', weight: 1 }
+        ]
+    }
+];
 
 // Referências do DOM
 const elements = {
@@ -91,6 +116,20 @@ const elements = {
     optionsList: document.getElementById('options-list'),
     btnEditRoulette: document.getElementById('btn-edit-roulette'),
     btnSaveEdit: document.getElementById('btn-save-edit'),
+    btnSaveTemplate: document.getElementById('btn-save-template'),
+    createModal: document.getElementById('create-modal'),
+    btnCancelCreate: document.getElementById('btn-cancel-create'),
+    btnConfirmCreate: document.getElementById('btn-confirm-create'),
+    tabBlank: document.getElementById('tab-blank'),
+    tabTemplate: document.getElementById('tab-template'),
+    createBlankArea: document.getElementById('create-blank-area'),
+    createTemplateArea: document.getElementById('create-template-area'),
+    userTemplatesList: document.getElementById('user-templates-list'),
+    defaultTemplatesList: document.getElementById('default-templates-list'),
+    createRouletteName: document.getElementById('create-roulette-name'),
+    selectedTemplateId: document.getElementById('selected-template-id'),
+    previewCanvas: document.getElementById('preview-canvas'),
+    toastContainer: document.getElementById('toast-container'),
     btnCancelEdit: document.getElementById('btn-cancel-edit'),
     toggleElimination: document.getElementById('toggle-elimination'),
     configSection: document.querySelector('.config-section'),
@@ -326,6 +365,14 @@ function renderDashboard() {
             if (file) handleProfileImageUpload({ target: { files: [file], getAttribute: () => r.id } });
         });
     });
+
+    // Create Ghost Card
+    const ghostCard = document.createElement('div');
+    ghostCard.className = 'roulette-card ghost-card';
+    ghostCard.onclick = openCreateModal;
+    ghostCard.innerHTML = `<i class="fa-solid fa-plus"></i><span>Criar Nova Roleta</span>`;
+    elements.roulettesGrid.appendChild(ghostCard);
+
 
     document.querySelectorAll('.profile-image-input').forEach(input => input.addEventListener('change', handleProfileImageUpload));
     document.querySelectorAll('.remove-profile-btn').forEach(btn => {
@@ -563,13 +610,7 @@ function removeOption(id) {
     renderEditor();
 }
 
-function createNewRoulette(name) {
-    const newRoul = defaultRoulette(name);
-    appState.roulettes.push(newRoul);
-    saveData();
-    showEditor(newRoul.id);
-    startEditing();
-}
+
 
 function duplicateCurrentRoulette() {
     const current = getCurrentRoulette();
@@ -832,6 +873,12 @@ function setupEventListeners() {
     elements.btnEditRoulette.addEventListener('click', startEditing);
     elements.btnSaveEdit.addEventListener('click', saveEditing);
     elements.btnCancelEdit.addEventListener('click', cancelEditing);
+    elements.btnCancelCreate?.addEventListener('click', closeCreateModal);
+    elements.btnConfirmCreate?.addEventListener('click', confirmCreation);
+    elements.tabBlank?.addEventListener('click', () => selectTab('blank'));
+    elements.tabTemplate?.addEventListener('click', () => selectTab('template'));
+    elements.btnSaveTemplate?.addEventListener('click', saveAsTemplate);
+
     elements.toggleElimination.addEventListener('change', (e) => {
         const current = getCurrentRoulette();
         current.eliminationMode = e.target.checked;
@@ -842,10 +889,7 @@ function setupEventListeners() {
     });
 
     // Dashboard
-    elements.btnNewRouletteDash.addEventListener('click', () => {
-        const name = prompt("Nome da nova roleta:", "Nova Roleta Premium");
-        if (name) createNewRoulette(name);
-    });
+
 
     // Editor Actions
 
@@ -1101,5 +1145,176 @@ function deleteSpecificRoulette(id) {
         }
         saveData();
         renderDashboard();
+    }
+}
+
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.style.background = 'var(--primary-color)';
+    toast.style.color = '#fff';
+    toast.style.padding = '10px 20px';
+    toast.style.borderRadius = '8px';
+    toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+    toast.style.fontSize = '0.9rem';
+    toast.style.fontWeight = '500';
+    toast.textContent = message;
+
+    elements.toastContainer.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.5s ease';
+        setTimeout(() => toast.remove(), 500);
+    }, 3000);
+}
+
+
+function openCreateModal() {
+    elements.createModal.classList.add('show');
+    elements.createRouletteName.value = '';
+    selectTab('blank');
+    renderTemplateLists();
+    drawPreviewCanvas(null);
+}
+
+function closeCreateModal() {
+    elements.createModal.classList.remove('show');
+}
+
+function selectTab(tab) {
+    if (tab === 'blank') {
+        elements.tabBlank.classList.add('active');
+        elements.tabTemplate.classList.remove('active');
+        elements.createBlankArea.style.display = 'block';
+        elements.createTemplateArea.style.display = 'none';
+        elements.selectedTemplateId.value = '';
+        drawPreviewCanvas(null);
+    } else {
+        elements.tabTemplate.classList.add('active');
+        elements.tabBlank.classList.remove('active');
+        elements.createBlankArea.style.display = 'none';
+        elements.createTemplateArea.style.display = 'flex';
+    }
+}
+
+function drawPreviewCanvas(template) {
+    const canvas = elements.previewCanvas;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width;
+    const h = canvas.height;
+
+    ctx.clearRect(0, 0, w, h);
+
+    let options = template ? template.options : defaultRoulette().options;
+
+    let startAngle = 0;
+    const totalWeight = options.reduce((s, o) => s + (o.weight || 1), 0);
+    const centerX = w / 2;
+    const centerY = h / 2;
+    const radius = w / 2;
+
+    options.forEach(opt => {
+        const sliceAngle = ((opt.weight || 1) / totalWeight) * 2 * Math.PI;
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
+        ctx.closePath();
+        ctx.fillStyle = opt.bgColor;
+        ctx.fill();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+        ctx.stroke();
+        startAngle += sliceAngle;
+    });
+}
+
+function createTemplateCard(tpl, isUser) {
+    const card = document.createElement('div');
+    card.style.minWidth = '120px';
+    card.style.background = 'var(--input-bg)';
+    card.style.border = '1px solid var(--input-border)';
+    card.style.borderRadius = '8px';
+    card.style.padding = '10px';
+    card.style.cursor = 'pointer';
+    card.style.textAlign = 'center';
+    card.style.transition = 'all 0.2s';
+
+    card.innerHTML = `<div style="font-size: 0.85rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(tpl.name)}</div>
+                       <div style="font-size: 0.75rem; opacity: 0.7;">${tpl.options.length} opções</div>`;
+
+    card.onclick = () => {
+        document.querySelectorAll('#create-template-area .template-card').forEach(c => c.style.borderColor = 'var(--input-border)');
+        card.style.borderColor = 'var(--primary-color)';
+        elements.selectedTemplateId.value = isUser ? 'user_' + tpl.id : 'def_' + tpl.id;
+        drawPreviewCanvas(tpl);
+    };
+    card.className = 'template-card';
+    return card;
+}
+
+function renderTemplateLists() {
+    elements.userTemplatesList.innerHTML = '';
+    elements.defaultTemplatesList.innerHTML = '';
+
+    if (appState.userTemplates && appState.userTemplates.length > 0) {
+        appState.userTemplates.forEach(tpl => {
+            elements.userTemplatesList.appendChild(createTemplateCard(tpl, true));
+        });
+    } else {
+        elements.userTemplatesList.innerHTML = '<div style="color: rgba(255,255,255,0.5); font-size: 0.85rem; padding: 10px;">Nenhum modelo salvo. Salve uma roleta usando o ícone de estrela nas configurações.</div>';
+    }
+
+    defaultTemplates.forEach(tpl => {
+        elements.defaultTemplatesList.appendChild(createTemplateCard(tpl, false));
+    });
+}
+
+function saveAsTemplate() {
+    const current = getCurrentRoulette();
+    if (!current) return;
+
+    const tpl = JSON.parse(JSON.stringify(current));
+    tpl.id = Date.now().toString(); // Novo ID pra não conflitar
+
+    if (!appState.userTemplates) appState.userTemplates = [];
+    appState.userTemplates.push(tpl);
+    saveData();
+    showToast("Roleta salva com sucesso em Meus Modelos!");
+}
+
+function confirmCreation() {
+    const isBlank = elements.tabBlank.classList.contains('active');
+    let newRoul;
+
+    if (isBlank) {
+        let name = elements.createRouletteName.value.trim();
+        if (!name) name = "Nova Roleta";
+        newRoul = defaultRoulette(name);
+    } else {
+        const selId = elements.selectedTemplateId.value;
+        if (!selId) {
+            alert("Selecione um modelo primeiro!");
+            return;
+        }
+
+        let source;
+        if (selId.startsWith('user_')) {
+            source = appState.userTemplates.find(t => t.id === selId.replace('user_', ''));
+        } else {
+            source = defaultTemplates.find(t => t.id === selId.replace('def_', ''));
+        }
+
+        if (source) {
+            newRoul = JSON.parse(JSON.stringify(source));
+            newRoul.id = Date.now().toString() + Math.floor(Math.random()*1000);
+        }
+    }
+
+    if (newRoul) {
+        appState.roulettes.push(newRoul);
+        saveData();
+        closeCreateModal();
+        showEditor(newRoul.id);
+        startEditing();
     }
 }
