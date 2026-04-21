@@ -1183,15 +1183,15 @@ function closeCreateModal() {
 
 function selectTab(tab) {
     if (tab === 'blank') {
-        elements.tabBlank.classList.add('active');
-        elements.tabTemplate.classList.remove('active');
+        elements.tabBlank.classList.add('active-mode');
+        elements.tabTemplate.classList.remove('active-mode');
         elements.createBlankArea.style.display = 'block';
         elements.createTemplateArea.style.display = 'none';
         elements.selectedTemplateId.value = '';
         drawPreviewCanvas(null);
     } else {
-        elements.tabTemplate.classList.add('active');
-        elements.tabBlank.classList.remove('active');
+        elements.tabTemplate.classList.add('active-mode');
+        elements.tabBlank.classList.remove('active-mode');
         elements.createBlankArea.style.display = 'none';
         elements.createTemplateArea.style.display = 'flex';
     }
@@ -1230,25 +1230,56 @@ function drawPreviewCanvas(template) {
 
 function createTemplateCard(tpl, isUser) {
     const card = document.createElement('div');
-    card.style.minWidth = '120px';
-    card.style.background = 'var(--input-bg)';
-    card.style.border = '1px solid var(--input-border)';
-    card.style.borderRadius = '8px';
-    card.style.padding = '10px';
-    card.style.cursor = 'pointer';
-    card.style.textAlign = 'center';
-    card.style.transition = 'all 0.2s';
+    card.className = 'template-mini-card';
 
-    card.innerHTML = `<div style="font-size: 0.85rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(tpl.name)}</div>
-                       <div style="font-size: 0.75rem; opacity: 0.7;">${tpl.options.length} opções</div>`;
+    // Setup canvas 80x80
+    const canvas = document.createElement('canvas');
+    canvas.width = 80;
+    canvas.height = 80;
+    const ctx = canvas.getContext('2d');
+    const cx = 40;
+    const cy = 40;
+    const r = 38;
+
+    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FDCB6E', '#6C5CE7', '#FF8ED4'];
+
+    if (!tpl.options || tpl.options.length === 0) {
+        ctx.fillStyle = '#333';
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
+    } else {
+        const sliceAngle = (Math.PI * 2) / tpl.options.length;
+        let startAngle = -Math.PI / 2;
+
+        tpl.options.forEach((opt, idx) => {
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, r, startAngle, startAngle + sliceAngle);
+            ctx.closePath();
+            ctx.fillStyle = opt.color || colors[idx % colors.length];
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            startAngle += sliceAngle;
+        });
+    }
+
+    const label = document.createElement('div');
+    label.className = 'template-label';
+    label.innerText = tpl.name;
+
+    card.appendChild(canvas);
+    card.appendChild(label);
 
     card.onclick = () => {
-        document.querySelectorAll('#create-template-area .template-card').forEach(c => c.style.borderColor = 'var(--input-border)');
-        card.style.borderColor = 'var(--primary-color)';
+        document.querySelectorAll('#create-template-area .template-mini-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
         elements.selectedTemplateId.value = isUser ? 'user_' + tpl.id : 'def_' + tpl.id;
         drawPreviewCanvas(tpl);
     };
-    card.className = 'template-card';
+
     return card;
 }
 
@@ -1261,7 +1292,7 @@ function renderTemplateLists() {
             elements.userTemplatesList.appendChild(createTemplateCard(tpl, true));
         });
     } else {
-        elements.userTemplatesList.innerHTML = '<div style="color: rgba(255,255,255,0.5); font-size: 0.85rem; padding: 10px;">Nenhum modelo salvo. Salve uma roleta usando o ícone de estrela nas configurações.</div>';
+        elements.userTemplatesList.innerHTML = '<div style="color: rgba(255,255,255,0.5); font-size: 0.85rem; padding: 10px; width: 100%; text-align: center;">Nenhum modelo salvo. Salve uma roleta usando o ícone de estrela nas configurações.</div>';
     }
 
     defaultTemplates.forEach(tpl => {
@@ -1283,7 +1314,7 @@ function saveAsTemplate() {
 }
 
 function confirmCreation() {
-    const isBlank = elements.tabBlank.classList.contains('active');
+    const isBlank = elements.tabBlank.classList.contains('active-mode');
     let newRoul;
 
     if (isBlank) {
@@ -1316,5 +1347,12 @@ function confirmCreation() {
         closeCreateModal();
         showEditor(newRoul.id);
         startEditing();
+    }
+}
+
+function scrollCarousel(containerId, amount) {
+    const container = document.getElementById(containerId);
+    if (container) {
+        container.scrollBy({ left: amount, behavior: 'smooth' });
     }
 }

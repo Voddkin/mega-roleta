@@ -130,11 +130,11 @@
 
     <!-- Modal de Criação (Templates) -->
     <div id="create-modal" class="modal-overlay">
-        <div class="modal-content glass-panel" style="width: 90%; max-width: 600px; padding: 20px;">
+        <div class="modal-content glass-panel" style="width: 90%; max-width: 850px; padding: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--panel-border); padding-bottom: 10px; margin-bottom: 15px;">
                 <h2 style="margin: 0; font-size: 1.3rem;">Nova Roleta</h2>
                 <div style="display: flex; gap: 10px;">
-                    <button id="tab-blank" class="btn btn-outline btn-sm active" title="Criar do Zero" style="width: 40px; height: 40px; border-radius: 8px; display: flex; justify-content: center; align-items: center;"><i class="fa-solid fa-file-circle-plus"></i></button>
+                    <button id="tab-blank" class="btn btn-outline btn-sm active-mode" title="Criar do Zero" style="width: 40px; height: 40px; border-radius: 8px; display: flex; justify-content: center; align-items: center;"><i class="fa-solid fa-file-circle-plus"></i></button>
                     <button id="tab-template" class="btn btn-outline btn-sm" title="Criar a partir de Modelo" style="width: 40px; height: 40px; border-radius: 8px; display: flex; justify-content: center; align-items: center;"><i class="fa-solid fa-layer-group"></i></button>
                 </div>
             </div>
@@ -154,14 +154,22 @@
             <div id="create-template-area" style="display: none; flex-direction: column; gap: 15px;">
                 <div>
                     <label style="font-size: 0.9rem; font-weight: 500; display: block; margin-bottom: 8px;">Seus Modelos (Salvos)</label>
-                    <div id="user-templates-list" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px;" class="config-scroll">
-                        <div style="color: rgba(255,255,255,0.5); font-size: 0.85rem; padding: 10px;">Nenhum modelo salvo. Salve uma roleta usando o ícone de disquete nas configurações.</div>
+                    <div class="carousel-wrapper">
+                        <button class="carousel-btn carousel-btn-left" onclick="scrollCarousel('user-templates-list', -200)"><i class="fa-solid fa-chevron-left"></i></button>
+                        <div id="user-templates-list" class="carousel-container">
+                            <div style="color: rgba(255,255,255,0.5); font-size: 0.85rem; padding: 10px; width: 100%; text-align: center;">Nenhum modelo salvo. Salve uma roleta usando o ícone de estrela nas configurações.</div>
+                        </div>
+                        <button class="carousel-btn carousel-btn-right" onclick="scrollCarousel('user-templates-list', 200)"><i class="fa-solid fa-chevron-right"></i></button>
                     </div>
                 </div>
                 <div>
                     <label style="font-size: 0.9rem; font-weight: 500; display: block; margin-bottom: 8px;">Modelos Padrões</label>
-                    <div id="default-templates-list" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px;" class="config-scroll">
-                        <!-- Gerados via JS -->
+                    <div class="carousel-wrapper">
+                        <button class="carousel-btn carousel-btn-left" onclick="scrollCarousel('default-templates-list', -200)"><i class="fa-solid fa-chevron-left"></i></button>
+                        <div id="default-templates-list" class="carousel-container">
+                            <!-- Gerados via JS -->
+                        </div>
+                        <button class="carousel-btn carousel-btn-right" onclick="scrollCarousel('default-templates-list', 200)"><i class="fa-solid fa-chevron-right"></i></button>
                     </div>
                 </div>
                 <input type="hidden" id="selected-template-id" value="">
