@@ -594,7 +594,11 @@ h1 {
 .config-section {
     flex: 1;
     width: 100%;
-    max-height: calc(100vh - 140px);
+    /* Remove max-height that caused overflow/background breaking */
+    height: auto !important;
+    min-height: fit-content !important;
+    overflow: visible;
+    padding-bottom: 40px; /* Add extra breathing room so dark bg hugs lines comfortably */
     display: flex;
     flex-direction: column;
 }
@@ -633,9 +637,10 @@ h1 {
 }
 
 .config-scroll {
-    overflow-y: visible;
-    height: auto;
-    min-height: min-content;
+    overflow-y: visible !important;
+    height: auto !important;
+    min-height: fit-content !important;
+    padding-bottom: 20px;
 }
 .options-list {
     display: grid;
@@ -714,14 +719,15 @@ h1 {
 }
 
 .option-row input[type="color"] {
-    width: 25px;
-    height: 25px;
+    width: 30px !important;
+    height: 30px !important;
+    aspect-ratio: 1 / 1 !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+    display: block !important;
     padding: 0;
     border: none;
-    border-radius: 50%;
     cursor: pointer;
-    flex-shrink: 0;
-    display: inline-block;
     overflow: hidden;
     appearance: none;
     -webkit-appearance: none;
