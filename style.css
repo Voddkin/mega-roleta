@@ -718,27 +718,20 @@ h1 {
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
 }
 
-.option-row input[type="color"] {
+input[type="color"] {
+    -webkit-appearance: none !important;
+    appearance: none !important;
     width: 30px !important;
     height: 30px !important;
-    aspect-ratio: 1 / 1 !important;
+    border: none !important;
+    padding: 0 !important;
+    background: transparent !important;
     border-radius: 50% !important;
     flex-shrink: 0 !important;
-    display: block !important;
-    padding: 0;
-    border: none;
     cursor: pointer;
-    overflow: hidden;
-    appearance: none;
-    -webkit-appearance: none;
+    overflow: hidden !important;
 }
-.option-row input[type="color"]::-webkit-color-swatch-wrapper {
-    padding: 0;
-}
-.option-row input[type="color"]::-webkit-color-swatch {
-    border: none;
-    border-radius: 50%;
-}
+
 
 .option-item:hover {
     border-color: var(--primary-color);
@@ -779,26 +772,7 @@ input:focus, select:focus {
 }
 
 /* Estilização Premium para Color Picker */
-input[type="color"] {
-    padding: 0;
-    height: 40px;
-    width: 40px;
-    min-width: 40px;
-    cursor: pointer;
-    border-radius: 50%; /* Bolinha perfeita */
-    overflow: hidden;
-    border: 2px solid var(--panel-border);
-    transition: transform var(--transition-bounce);
-}
-input[type="color"]:hover {
-    transform: scale(1.1);
-    border-color: var(--primary-color);
-}
-input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
-input[type="color"]::-webkit-color-swatch {
-    border: none;
-    border-radius: 50%;
-}
+
 
 .input-text {
     flex: 1;
@@ -1187,4 +1161,22 @@ input:checked + .slider:before { transform: translateX(22px); }
     font-weight: 600;
     color: rgba(255,255,255,0.7);
     font-size: 1.1rem;
+}
+
+
+/* Remove o padding interno invisível do Chrome/Safari */
+input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0 !important;
+}
+
+/* Força a cor interna a ficar redonda e sem borda */
+input[type="color"]::-webkit-color-swatch {
+    border: none !important;
+    border-radius: 50% !important;
+}
+
+/* Para compatibilidade com Firefox */
+input[type="color"]::-moz-color-swatch {
+    border: none !important;
+    border-radius: 50% !important;
 }
