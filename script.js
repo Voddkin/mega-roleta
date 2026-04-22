@@ -64,9 +64,9 @@ const defaultRoulette = (name = "Minha Roleta") => ({
     name: name,
     pointerColor: "#ff0000",
     options: [
-        { id: Date.now().toString() + '1', name: "Opção 1", bgColor: "#4CAF50", textColor: "#ffffff", weight: 1, message: "Você ganhou a Opção 1!" },
-        { id: Date.now().toString() + '2', name: "Opção 2", bgColor: "#2196F3", textColor: "#ffffff", weight: 1, message: "Você ganhou a Opção 2!" },
-        { id: Date.now().toString() + '3', name: "Opção 3", bgColor: "#F44336", textColor: "#ffffff", weight: 1, message: "Você ganhou a Opção 3!" }
+        { id: Date.now().toString() + '1', name: "Opção 1", bgColor: "#4CAF50", textColor: "#ffffff", weight: 1, message: "" },
+        { id: Date.now().toString() + '2', name: "Opção 2", bgColor: "#2196F3", textColor: "#ffffff", weight: 1, message: "" },
+        { id: Date.now().toString() + '3', name: "Opção 3", bgColor: "#F44336", textColor: "#ffffff", weight: 1, message: "" }
     ]
 });
 
@@ -76,6 +76,7 @@ const defaultTemplates = [
   {
     name: "Cara ou Coroa",
     eliminationMode: false,
+    showAdvanced: false,
     options: [
       { text: "Cara", color: "#FFD700", weight: 1 },
       { text: "Coroa", color: "#C0C0C0", weight: 1 }
@@ -84,6 +85,7 @@ const defaultTemplates = [
   {
     name: "Sim, Não ou Talvez",
     eliminationMode: false,
+    showAdvanced: false,
     options: [
       { text: "Sim", color: "#22c55e", weight: 45 },
       { text: "Não", color: "#ef4444", weight: 45 },
@@ -93,6 +95,7 @@ const defaultTemplates = [
   {
     name: "Verdade ou Desafio",
     eliminationMode: false,
+    showAdvanced: false,
     options: [
       { text: "Verdade", color: "#8b5cf6", weight: 1 },
       { text: "Desafio", color: "#f97316", weight: 1 }
@@ -100,7 +103,8 @@ const defaultTemplates = [
   },
   {
     name: "Roleta do Alfabeto",
-    eliminationMode: true, // Ativo por padrão para não repetir letras. Portanto, o modo de eliminação PRECISA ESTAR AUTOMATICAMENTE ATIVADO!
+    eliminationMode: true,
+    showAdvanced: false,
     options: "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map((letra, index) => ({
       text: letra,
       color: `hsl(${(index * 360) / 26}, 70%, 50%)`, // Gera um arco-íris perfeito
@@ -109,7 +113,8 @@ const defaultTemplates = [
   },
   {
     name: "Quem É Mais Provável",
-    eliminationMode: true, // Portanto, o modo de eliminação PRECISA ESTAR AUTOMATICAMENTE ATIVADO!
+    eliminationMode: true,
+    showAdvanced: false,
     options: [
       { text: "...ficar rico do nada?", color: "#1A05A2", weight: 1 },
       { text: "...chorar vendo filme?", color: "#8F0177", weight: 1 },
@@ -128,6 +133,7 @@ const defaultTemplates = [
   {
     name: "Roda da Fortuna",
     eliminationMode: false,
+    showAdvanced: false,
     options: [
       { text: "x2", color: "#3b82f6", weight: 20 },
       { text: "x5", color: "#8b5cf6", weight: 10 },
@@ -139,18 +145,21 @@ const defaultTemplates = [
   {
     name: "Roleta Clássica Europeia",
     eliminationMode: false,
+    showAdvanced: true, // Ativa o modo avançado automaticamente
     options: [
-      { text: "0", color: "#22c55e", weight: 1 },
+      { text: "0", color: "#22c55e", weight: 1, message: "Você tem muita sorte! Parabéns!" }, // Mensagem verde
       ...Array.from({ length: 36 }, (_, i) => ({
         text: (i + 1).toString(),
         color: (i + 1) % 2 === 0 ? "#1e293b" : "#ef4444", // Preto e Vermelho intercalados
-        weight: 1
+        weight: 1,
+        message: "Não foi desta vez..." // Mensagem que vai se repetir do 1 ao 36
       }))
     ]
   },
   {
     name: "Roleta de Personagens",
-    eliminationMode: true, // Portanto, o modo de eliminação PRECISA ESTAR AUTOMATICAMENTE ATIVADO!
+    eliminationMode: true,
+    showAdvanced: false,
     options: [
       { text: "O Herói", color: "#3b82f6", weight: 1 },
       { text: "O Vilão", color: "#ef4444", weight: 1 },
@@ -162,6 +171,7 @@ const defaultTemplates = [
   {
     name: "Caixa Misteriosa",
     eliminationMode: false,
+    showAdvanced: false,
     options: [
       { text: "Comum (50%)", color: "#94a3b8", weight: 50 },
       { text: "Raro (30%)", color: "#3b82f6", weight: 30 },
@@ -171,14 +181,15 @@ const defaultTemplates = [
   },
   {
     name: "Roleta Russa",
-    eliminationMode: true, // Crucial para eliminar as câmaras vazias rodada a rodada. Portanto, o modo de eliminação PRECISA ESTAR AUTOMATICAMENTE ATIVADO!
+    eliminationMode: true,
+    showAdvanced: true,
     options: [
-      { text: "BANG! 💥", color: "#7f1d1d", weight: 1 }, // Vermelho escuro/sangue
-      { text: "Click...", color: "#e2e8f0", weight: 1 },
-      { text: "Click...", color: "#cbd5e1", weight: 1 },
-      { text: "Click...", color: "#94a3b8", weight: 1 },
-      { text: "Click...", color: "#64748b", weight: 1 },
-      { text: "Click...", color: "#475569", weight: 1 }
+      { text: "BANG! 💥", color: "#7f1d1d", weight: 1, message: "Fim de jogo!" },
+      { text: "Click...", color: "#e2e8f0", weight: 1, message: "Você teve sorte. O cartucho era falso." },
+      { text: "Click...", color: "#cbd5e1", weight: 1, message: "Você teve sorte. O cartucho era falso." },
+      { text: "Click...", color: "#94a3b8", weight: 1, message: "Você teve sorte. O cartucho era falso." },
+      { text: "Click...", color: "#64748b", weight: 1, message: "Você teve sorte. O cartucho era falso." },
+      { text: "Click...", color: "#475569", weight: 1, message: "Você teve sorte. O cartucho era falso." }
     ]
   }
 ];
@@ -186,14 +197,18 @@ const defaultTemplates = [
 // Normalizar a estrutura para ser compatível com a aplicação
 defaultTemplates.forEach((tpl, i) => {
     tpl.id = 'def_' + i;
-    // Map text to name, color to bgColor
+    // Garante que o showAdvanced seja levado adiante
+    tpl.showAdvanced = !!tpl.showAdvanced; 
+
     if (tpl.options && Array.isArray(tpl.options)) {
         tpl.options = tpl.options.map((opt, j) => ({
             id: 'def_opt_' + i + '_' + j,
             name: opt.text,
             bgColor: opt.color,
             textColor: '#ffffff',
-            weight: opt.weight
+            weight: opt.weight,
+            // CORREÇÃO: Mapeia a mensagem personalizada do template
+            message: opt.message || "" 
         }));
     }
 });
@@ -550,7 +565,6 @@ function drawMiniature(canvasId, r) {
     }
 }
 
-// --- RENDERIZAÇÃO DO EDITOR ---
 function renderEditor() {
     const current = getCurrentRoulette();
     if (!current) return showDashboard();
@@ -561,8 +575,12 @@ function renderEditor() {
     elements.pointer.style.borderTopColor = current.pointerColor;
     elements.optionsCount.textContent = current.options.length;
     
-    // A LINHA MÁGICA AQUI: Sincroniza o botão de Eliminação com o dado da roleta!
+    // Sincroniza o Switch de Eliminação
     elements.toggleElimination.checked = !!current.eliminationMode;
+
+    // Sincroniza o Switch do Modo Avançado e aplica o visual
+    elements.toggleAdvanced.checked = !!current.showAdvanced;
+    toggleAdvancedMode(); 
 
     renderOptionsList();
     drawRoulette();
@@ -711,7 +729,7 @@ function addOption() {
 function removeOption(id) {
     const current = getCurrentRoulette();
     if (current.options.length <= 2) {
-        alert("A roleta precisa ter no mínimo 2 opções.");
+        showToast("A roleta precisa ter no mínimo 2 opções.", "warning");
         return;
     }
     current.options = current.options.filter(o => o.id !== id);
@@ -859,7 +877,7 @@ function spin() {
     const r = getCurrentRoulette();
     const activeOptions = isEditing ? r.options : sessionOptions;
     if (activeOptions.length < 2) {
-        alert("Adicione pelo menos 2 opções para girar.");
+        showToast("Adicione pelo menos 2 opções para girar.", "warning");
         return;
     }
 
@@ -951,7 +969,7 @@ function showWinnerModal(option) {
         elements.winnerImageContainer.style.display = 'none';
         elements.winnerImage.src = '';
     }
-    elements.winnerMessage.textContent = option.message ? option.message : "Fantástico! Você foi sorteado.";
+    elements.winnerMessage.textContent = option.message ? option.message : `Fantástico! O resultado foi: ${option.name}`;
     elements.modal.classList.add('show');
     elements.confettiCanvas.classList.add('show');
     startConfetti();
@@ -1026,7 +1044,14 @@ function setupEventListeners() {
         }
     });
 
-    elements.toggleAdvanced.addEventListener('change', toggleAdvancedMode);
+    elements.toggleAdvanced.addEventListener('change', () => {
+        const current = getCurrentRoulette();
+        if (current) {
+            current.showAdvanced = elements.toggleAdvanced.checked;
+            saveData();
+        }
+        toggleAdvancedMode();
+    });
     elements.btnAddOption.addEventListener('click', addOption);
     elements.btnSpin.addEventListener('click', spin);
     elements.btnCloseModal.addEventListener('click', hideWinnerModal);
@@ -1130,7 +1155,7 @@ async function handleProfileImageUpload(e) {
             saveData();
             renderDashboard();
         }
-    } catch (err) { alert(err.message); }
+    } catch (err) { showToast(err.message, "error"); }
 }
 
 function showDefaultIconsGallery(rouletteId) {
@@ -1199,7 +1224,7 @@ async function handleOptionImageUpload(e, explicitId) {
             saveData();
             renderEditor();
         }
-    } catch (err) { alert("Erro ao processar a imagem. " + err.message); }
+    } catch (err) { showToast("Erro ao processar a imagem.", "error"); }
 }
 
 function removeOptionImage(id) {
@@ -1279,14 +1304,24 @@ function confirmDeleteRoulette() {
     showToast("Roleta excluída com sucesso!");
 }
 
-function showToast(message) {
-    console.log("Disparando aviso:", message); // <-- Se isso aparecer no F12, o botão funciona!
-
+// Função que aceita um segundo parâmetro: 'success', 'warning' ou 'error'
+function showToast(message, type = 'success') {
     const toast = document.createElement('div');
-    toast.className = 'toast-notification';
-    toast.innerHTML = `<i class="fa-solid fa-circle-check"></i> <span>${escapeHTML(message)}</span>`;
+    
+    let icon = 'fa-circle-check';
+    let typeClass = 'toast-success';
 
-    // SISTEMA BLINDADO: Se o container não existir no HTML, ele cria na hora!
+    if (type === 'warning') {
+        icon = 'fa-triangle-exclamation';
+        typeClass = 'toast-warning';
+    } else if (type === 'error') {
+        icon = 'fa-circle-xmark';
+        typeClass = 'toast-error';
+    }
+
+    toast.className = `toast-notification ${typeClass}`;
+    toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${escapeHTML(message)}</span>`;
+
     let container = document.getElementById('toast-container');
     if (!container) {
         container = document.createElement('div');
@@ -1470,7 +1505,7 @@ function confirmCreation() {
     } else {
         const selId = elements.selectedTemplateId.value;
         if (!selId) {
-            alert("Selecione um modelo primeiro!");
+            showToast("Selecione um modelo primeiro!", "warning");
             return;
         }
 

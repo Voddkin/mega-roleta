@@ -1355,7 +1355,6 @@ optgroup {
 
 /* --- TOAST NOTIFICATIONS (Avisos Flutuantes) BLINDADO --- */
 .toast-notification {
-    background: #10b981 !important; 
     color: white !important;
     padding: 12px 24px;
     border-radius: 50px;
@@ -1364,18 +1363,22 @@ optgroup {
     font-weight: 600;
     display: flex;
     align-items: center;
-    justify-content: center; /* Centraliza perfeitamente no mobile */
-    text-align: center; /* Evita que o texto fique torto */
+    justify-content: center; 
+    text-align: center; 
     gap: 10px;
-    width: max-content; /* Diz pro aviso usar o tamanho do texto */
-    max-width: 100%; /* Mas respeitar a tela do celular */
-    /* Nova animação vindo do teto */
+    width: max-content; 
+    max-width: 100%; 
     animation: slideDownFade 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; 
     z-index: 10000;
 }
 
+/* Nossas variantes de cores blindadas */
+.toast-success { background: #10b981 !important; } /* Verde */
+.toast-warning { background: #f59e0b !important; } /* Laranja */
+.toast-error { background: #ef4444 !important; }   /* Vermelho */
+
 .toast-notification.hide {
-    animation: fadeOutUp 0.4s ease forwards; /* Animação sumindo pro teto */
+    animation: fadeOutUp 0.4s ease forwards;
 }
 
 /* Animações Invertidas (Vindo do Topo) */
