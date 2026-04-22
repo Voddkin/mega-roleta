@@ -560,6 +560,9 @@ function renderEditor() {
     elements.inputPointerColor.value = current.pointerColor;
     elements.pointer.style.borderTopColor = current.pointerColor;
     elements.optionsCount.textContent = current.options.length;
+    
+    // A LINHA MÁGICA AQUI: Sincroniza o botão de Eliminação com o dado da roleta!
+    elements.toggleElimination.checked = !!current.eliminationMode;
 
     renderOptionsList();
     drawRoulette();
