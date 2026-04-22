@@ -73,26 +73,130 @@ const defaultRoulette = (name = "Minha Roleta") => ({
 
 // --- TEMPLATES PADRÕES ---
 const defaultTemplates = [
-    {
-        id: 'tpl_1', name: 'Cara ou Coroa',
-        options: [
-            { id: 'o1', name: 'Cara', bgColor: '#3B82F6', textColor: '#ffffff', weight: 1, message: 'Deu Cara!' },
-            { id: 'o2', name: 'Coroa', bgColor: '#EF4444', textColor: '#ffffff', weight: 1, message: 'Deu Coroa!' }
-        ]
-    },
-    {
-        id: 'tpl_2', name: 'Dias da Semana',
-        options: [
-            { id: 'o1', name: 'Segunda', bgColor: '#6366f1', textColor: '#fff', weight: 1 },
-            { id: 'o2', name: 'Terça', bgColor: '#8b5cf6', textColor: '#fff', weight: 1 },
-            { id: 'o3', name: 'Quarta', bgColor: '#d946ef', textColor: '#fff', weight: 1 },
-            { id: 'o4', name: 'Quinta', bgColor: '#f43f5e', textColor: '#fff', weight: 1 },
-            { id: 'o5', name: 'Sexta', bgColor: '#f97316', textColor: '#fff', weight: 1 },
-            { id: 'o6', name: 'Sábado', bgColor: '#eab308', textColor: '#fff', weight: 1 },
-            { id: 'o7', name: 'Domingo', bgColor: '#14b8a6', textColor: '#fff', weight: 1 }
-        ]
-    }
+  {
+    name: "Cara ou Coroa",
+    eliminationMode: false,
+    options: [
+      { text: "Cara", color: "#FFD700", weight: 1 },
+      { text: "Coroa", color: "#C0C0C0", weight: 1 }
+    ]
+  },
+  {
+    name: "Sim, Não ou Talvez",
+    eliminationMode: false,
+    options: [
+      { text: "Sim", color: "#22c55e", weight: 45 },
+      { text: "Não", color: "#ef4444", weight: 45 },
+      { text: "Talvez", color: "#64748b", weight: 10 }
+    ]
+  },
+  {
+    name: "Verdade ou Desafio",
+    eliminationMode: false,
+    options: [
+      { text: "Verdade", color: "#8b5cf6", weight: 1 },
+      { text: "Desafio", color: "#f97316", weight: 1 }
+    ]
+  },
+  {
+    name: "Roleta do Alfabeto",
+    eliminationMode: true, // Ativo por padrão para não repetir letras. Portanto, o modo de eliminação PRECISA ESTAR AUTOMATICAMENTE ATIVADO!
+    options: "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map((letra, index) => ({
+      text: letra,
+      color: `hsl(${(index * 360) / 26}, 70%, 50%)`, // Gera um arco-íris perfeito
+      weight: 1
+    }))
+  },
+  {
+    name: "Quem É Mais Provável",
+    eliminationMode: true, // Portanto, o modo de eliminação PRECISA ESTAR AUTOMATICAMENTE ATIVADO!
+    options: [
+      { text: "...ficar rico do nada?", color: "#1A05A2", weight: 1 },
+      { text: "...chorar vendo filme?", color: "#8F0177", weight: 1 },
+      { text: "...ser preso?", color: "#DE1A58", weight: 1 },
+      { text: "...esquecer o aniversário do amigo?", color: "#F67D31", weight: 1 },
+      { text: "...a cair primeiro num apocalipse zumbi?", color: "#1A05A2", weight: 1 },
+      { text: "...entregar o próximo por dinheiro?", color: "#8F0177", weight: 1 },
+      { text: "...morrer solteiro?", color: "#DE1A58", weight: 1 },
+      { text: "...ficar endividado por casa de aposta?", color: "#F67D31", weight: 1 },
+      { text: "...construir o melhor shape?", color: "#1A05A2", weight: 1 },
+      { text: "...ser cancelado na Internet por memes?", color: "#8F0177", weight: 1 },
+      { text: "...ser hackeado e perder tudo no banco?", color: "#DE1A58", weight: 1 },
+      { text: "...trair o parceiro amoroso?", color: "#F67D31", weight: 1 }
+    ]
+  },
+  {
+    name: "Roda da Fortuna",
+    eliminationMode: false,
+    options: [
+      { text: "x2", color: "#3b82f6", weight: 20 },
+      { text: "x5", color: "#8b5cf6", weight: 10 },
+      { text: "Passa a Vez", color: "#64748b", weight: 15 },
+      { text: "Perdeu Tudo!", color: "#ef4444", weight: 5 },
+      { text: "Jackpot 💰", color: "#eab308", weight: 1 } // Probabilidade super rara
+    ]
+  },
+  {
+    name: "Roleta Clássica Europeia",
+    eliminationMode: false,
+    options: [
+      { text: "0", color: "#22c55e", weight: 1 },
+      ...Array.from({ length: 36 }, (_, i) => ({
+        text: (i + 1).toString(),
+        color: (i + 1) % 2 === 0 ? "#1e293b" : "#ef4444", // Preto e Vermelho intercalados
+        weight: 1
+      }))
+    ]
+  },
+  {
+    name: "Roleta de Personagens",
+    eliminationMode: true, // Portanto, o modo de eliminação PRECISA ESTAR AUTOMATICAMENTE ATIVADO!
+    options: [
+      { text: "O Herói", color: "#3b82f6", weight: 1 },
+      { text: "O Vilão", color: "#ef4444", weight: 1 },
+      { text: "O Alívio Cômico", color: "#eab308", weight: 1 },
+      { text: "O Sábio", color: "#10b981", weight: 1 },
+      { text: "O Traidor", color: "#64748b", weight: 1 }
+    ]
+  },
+  {
+    name: "Caixa Misteriosa",
+    eliminationMode: false,
+    options: [
+      { text: "Comum (50%)", color: "#94a3b8", weight: 50 },
+      { text: "Raro (30%)", color: "#3b82f6", weight: 30 },
+      { text: "Épico (15%)", color: "#a855f7", weight: 15 },
+      { text: "Lendário (5%)", color: "#eab308", weight: 5 }
+    ]
+  },
+  {
+    name: "Roleta Russa",
+    eliminationMode: true, // Crucial para eliminar as câmaras vazias rodada a rodada. Portanto, o modo de eliminação PRECISA ESTAR AUTOMATICAMENTE ATIVADO!
+    options: [
+      { text: "BANG! 💥", color: "#7f1d1d", weight: 1 }, // Vermelho escuro/sangue
+      { text: "Click...", color: "#e2e8f0", weight: 1 },
+      { text: "Click...", color: "#cbd5e1", weight: 1 },
+      { text: "Click...", color: "#94a3b8", weight: 1 },
+      { text: "Click...", color: "#64748b", weight: 1 },
+      { text: "Click...", color: "#475569", weight: 1 }
+    ]
+  }
 ];
+
+// Normalizar a estrutura para ser compatível com a aplicação
+defaultTemplates.forEach((tpl, i) => {
+    tpl.id = 'def_' + i;
+    // Map text to name, color to bgColor
+    if (tpl.options && Array.isArray(tpl.options)) {
+        tpl.options = tpl.options.map((opt, j) => ({
+            id: 'def_opt_' + i + '_' + j,
+            name: opt.text,
+            bgColor: opt.color,
+            textColor: '#ffffff',
+            weight: opt.weight
+        }));
+    }
+});
 
 // Referências do DOM
 const elements = {
