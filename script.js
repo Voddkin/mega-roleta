@@ -330,11 +330,13 @@ function renderDashboard() {
             <div class="card-canvas-container" style="position: relative;">
                 ${profileImageHTML}
                 <div style="position: absolute; bottom: -10px; right: -10px; display: flex; gap: 5px;">
-                    <label class="upload-profile-btn" title="Fazer Upload de Imagem" style="background: var(--primary-color); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
-                        <i class="fa-solid fa-folder-open"></i>
+                    <label class="btn btn-primary" title="Fazer Upload de Imagem" style="border-radius: 50%; width: 32px; height: 32px; min-width: 32px; min-height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; margin: 0;">
+                        <i class="fa-solid fa-folder-open" style="color: white !important; font-size: 14px;"></i>
                         <input type="file" style="display:none;" accept="image/png, image/jpeg, image/webp" data-id="${r.id}" class="profile-image-input">
                     </label>
-                    <button class="btn btn-primary" title="Escolher Ícone Padrão" onclick="showDefaultIconsGallery('${r.id}')" style="border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0;"><i class="fa-solid fa-palette"></i></button>
+                    <button class="btn btn-primary" title="Escolher Ícone Padrão" onclick="showDefaultIconsGallery('${r.id}')" style="border-radius: 50%; width: 32px; height: 32px; min-width: 32px; min-height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; margin: 0;">
+                        <i class="fa-solid fa-palette" style="color: white !important; font-size: 14px;"></i>
+                    </button>
                 </div>
                 ${r.profileImage ? `<button class="remove-profile-btn" title="Remover Foto" data-id="${r.id}" style="position: absolute; top: 0; right: 0; background: var(--danger-color); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"><i class="fa-solid fa-xmark"></i></button>` : ''}
             </div>
@@ -1356,3 +1358,4 @@ function scrollCarousel(containerId, amount) {
         container.scrollBy({ left: amount, behavior: 'smooth' });
     }
 }
+
