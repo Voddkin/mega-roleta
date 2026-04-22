@@ -751,7 +751,7 @@ input[type="color"] {
 .option-item:hover {
     border-color: var(--primary-color);
     transform: translateX(4px);
-    box-shadow: var(--shadow-soft), 0 -3px 5px var(--primary-color);
+    box-shadow: var(--shadow-soft), 0 3px 5px var(--primary-color);
     background: var(--panel-bg);
 }
 
