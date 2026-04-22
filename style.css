@@ -421,13 +421,25 @@ h1 {
     overflow: hidden;
 }
 
+/* 1. O Novo Contorno Interno Completo */
 .roulette-card::before {
     content: '';
     position: absolute;
-    top: 0; left: 0; right: 0; height: 4px;
-    background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+    top: 0; left: 0; right: 0; bottom: 0; /* Expande para os 4 lados */
+    border-radius: inherit; /* Acompanha o arredondamento do card */
+    padding: 2px; /* Espessura do contorno (pode alterar se achar fino/grosso) */
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover)); /* Tira o verde, usa o gradiente do tema! */
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
     opacity: 0;
     transition: opacity var(--transition-speed);
+    pointer-events: none; /* Garante que o contorno não bloqueie os cliques */
+}
+
+/* 2. Correção do Card de "Criar Nova Roleta" */
+.ghost-card::before {
+    display: none !important; /* Esconde o contorno sólido no card tracejado */
 }
 
 .roulette-card:hover {
@@ -780,6 +792,7 @@ input:focus, select:focus {
 }
 
 /* Botões Premium */
+
 .btn {
     padding: 12px 20px;
     border: none;
@@ -813,30 +826,32 @@ input:focus, select:focus {
 .btn-primary {
     background-color: var(--primary-color);
     color: white;
-    box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Sombra neutra adaptável */
 }
 .btn-primary:hover {
     background-color: var(--primary-hover);
-    box-shadow: 0 6px 15px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3); /* Sombra neutra adaptável */
 }
 
 .btn-success {
-    background-color: var(--success-color);
-    color: white;
-    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+    background-color: #10b981 !important; /* Verde padrão fixo e protegido */
+    color: white !important;
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3) !important; /* Sombra verde original */
 }
+
 .btn-success:hover {
-    background-color: var(--success-hover);
-    box-shadow: 0 6px 15px rgba(16, 185, 129, 0.4);
+    background-color: #059669 !important; /* Verde mais escuro no hover */
+    box-shadow: 0 6px 15px rgba(16, 185, 129, 0.4) !important;
 }
 
 .btn-danger {
     background-color: var(--danger-color);
     color: white;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Consistência com os outros */
 }
 .btn-danger:hover {
     background-color: var(--danger-hover);
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3); /* Consistência com os outros */
 }
 
 .btn-outline {
@@ -861,13 +876,13 @@ input:focus, select:focus {
     letter-spacing: 1.5px;
     margin-top: 15px;
     transition: all 0.4s var(--transition-bounce);
-    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3); /* Sombra neutra adaptável */
     border: 2px solid rgba(255,255,255,0.1);
 }
 
 .btn-spin:hover:not(:disabled) {
     transform: translateY(-4px) scale(1.02);
-    box-shadow: 0 15px 35px rgba(99, 102, 241, 0.6);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4); /* Sombra neutra adaptável */
     border-color: rgba(255,255,255,0.3);
 }
 
@@ -1159,7 +1174,7 @@ input:checked + .slider:before { transform: translateX(22px); }
 
 .ghost-card span {
     font-weight: 600;
-    color: rgba(255,255,255,0.7);
+    color: var(--text-color);
     font-size: 1.1rem;
 }
 
@@ -1279,3 +1294,35 @@ input[type="color"]::-moz-color-swatch {
 
 .carousel-btn-left { left: -16px; }
 .carousel-btn-right { right: -16px; }
+
+/* --- NOVOS AJUSTES DE TEMA E LAYOUT --- */
+[data-mode="light"] .ghost-card {
+    border: 2px dashed rgb(0 0 0 / 25%);
+    background: rgb(255 255 255 / 34%);
+}
+
+[data-mode="light"] .ghost-card:hover {
+    border-color: var(--primary-color);
+}
+
+[data-mode="light"] .ghost-card span {
+    color: var(--text-color);
+}
+
+.ghost-card i {
+    color: var(--primary-color);
+}
+
+section.roulette-section.glass-panel {
+    margin-bottom: 30px;
+}
+
+optgroup option {
+    color: var(--text-color);
+    background-color: var(--bg-color);
+}
+
+optgroup {
+    color: var(--bg-color);
+    background-color: var(--text-color);
+}
