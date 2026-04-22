@@ -73,25 +73,120 @@ const defaultRoulette = (name = "Minha Roleta") => ({
 
 // --- TEMPLATES PADRÕES ---
 const defaultTemplates = [
-    {
-        id: 'tpl_1', name: 'Cara ou Coroa',
-        options: [
-            { id: 'o1', name: 'Cara', bgColor: '#3B82F6', textColor: '#ffffff', weight: 1, message: 'Deu Cara!' },
-            { id: 'o2', name: 'Coroa', bgColor: '#EF4444', textColor: '#ffffff', weight: 1, message: 'Deu Coroa!' }
-        ]
-    },
-    {
-        id: 'tpl_2', name: 'Dias da Semana',
-        options: [
-            { id: 'o1', name: 'Segunda', bgColor: '#6366f1', textColor: '#fff', weight: 1 },
-            { id: 'o2', name: 'Terça', bgColor: '#8b5cf6', textColor: '#fff', weight: 1 },
-            { id: 'o3', name: 'Quarta', bgColor: '#d946ef', textColor: '#fff', weight: 1 },
-            { id: 'o4', name: 'Quinta', bgColor: '#f43f5e', textColor: '#fff', weight: 1 },
-            { id: 'o5', name: 'Sexta', bgColor: '#f97316', textColor: '#fff', weight: 1 },
-            { id: 'o6', name: 'Sábado', bgColor: '#eab308', textColor: '#fff', weight: 1 },
-            { id: 'o7', name: 'Domingo', bgColor: '#14b8a6', textColor: '#fff', weight: 1 }
-        ]
-    }
+  {
+    id: 'tpl_1', name: "Cara ou Coroa",
+    eliminationMode: false,
+    options: [
+      { id: 't1_1', name: "Cara", bgColor: "#FFD700", textColor: "#000000", weight: 1, message: "Deu Cara!" },
+      { id: 't1_2', name: "Coroa", bgColor: "#C0C0C0", textColor: "#000000", weight: 1, message: "Deu Coroa!" }
+    ]
+  },
+  {
+    id: 'tpl_2', name: "Sim, Não ou Talvez",
+    eliminationMode: false,
+    options: [
+      { id: 't2_1', name: "Sim", bgColor: "#22c55e", textColor: "#ffffff", weight: 45, message: "A resposta é Sim!" },
+      { id: 't2_2', name: "Não", bgColor: "#ef4444", textColor: "#ffffff", weight: 45, message: "A resposta é Não!" },
+      { id: 't2_3', name: "Talvez", bgColor: "#64748b", textColor: "#ffffff", weight: 10, message: "Talvez... tente de novo!" }
+    ]
+  },
+  {
+    id: 'tpl_3', name: "Verdade ou Desafio",
+    eliminationMode: false,
+    options: [
+      { id: 't3_1', name: "Verdade", bgColor: "#8b5cf6", textColor: "#ffffff", weight: 1, message: "Conte uma Verdade!" },
+      { id: 't3_2', name: "Desafio", bgColor: "#f97316", textColor: "#ffffff", weight: 1, message: "Cumpra um Desafio!" }
+    ]
+  },
+  {
+    id: 'tpl_4', name: "Roleta do Alfabeto",
+    eliminationMode: true, // Ativo por padrão para não repetir letras
+    options: "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map((letra, index) => ({
+      id: 't4_' + index,
+      name: letra,
+      bgColor: `hsl(${(index * 360) / 26}, 70%, 50%)`, // Gera um arco-íris perfeito
+      textColor: "#ffffff",
+      weight: 1,
+      message: `A letra escolhida é: ${letra}`
+    }))
+  },
+  {
+    id: 'tpl_5', name: "Quem É Mais Provável",
+    eliminationMode: true,
+    options: [
+      { id: 't5_1', name: "...ficar rico do nada?", bgColor: "#1A05A2", textColor: "#ffffff", weight: 1, message: "Quem é mais provável de ficar rico do nada?" },
+      { id: 't5_2', name: "...chorar vendo filme?", bgColor: "#8F0177", textColor: "#ffffff", weight: 1, message: "Quem é mais provável de chorar vendo filme?" },
+      { id: 't5_3', name: "...ser preso?", bgColor: "#DE1A58", textColor: "#ffffff", weight: 1, message: "Quem é mais provável de ser preso?" },
+      { id: 't5_4', name: "...esquecer o aniversário do amigo?", bgColor: "#F67D31", textColor: "#ffffff", weight: 1, message: "Quem é mais provável de esquecer o aniversário do amigo?" },
+      { id: 't5_5', name: "...sobreviver a um apocalipse zumbi?", bgColor: "#1A05A2", textColor: "#ffffff", weight: 1, message: "Quem é mais provável de sobreviver a um apocalipse zumbi?" },
+      { id: 't5_6', name: "...entregar o próximo por dinheiro?", bgColor: "#8F0177", textColor: "#ffffff", weight: 1, message: "Quem é mais provável de entregar o próximo por dinheiro?" },
+      { id: 't5_7', name: "...morrer solteiro?", bgColor: "#DE1A58", textColor: "#ffffff", weight: 1, message: "Quem é mais provável de morrer solteiro?" },
+      { id: 't5_8', name: "...ficar endividado por casa de aposta?", bgColor: "#F67D31", textColor: "#ffffff", weight: 1, message: "Quem é mais provável de ficar endividado por casa de aposta?" },
+      { id: 't5_9', name: "...construir o melhor shape?", bgColor: "#1A05A2", textColor: "#ffffff", weight: 1, message: "Quem é mais provável de construir o melhor shape?" },
+      { id: 't5_10', name: "...ser cancelado na Internet por memes?", bgColor: "#8F0177", textColor: "#ffffff", weight: 1, message: "Quem é mais provável de ser cancelado na Internet por memes?" },
+      { id: 't5_11', name: "...ser hackeado e perder tudo no banco?", bgColor: "#DE1A58", textColor: "#ffffff", weight: 1, message: "Quem é mais provável de ser hackeado e perder tudo no banco?" },
+      { id: 't5_12', name: "...trair o parceiro amoroso?", bgColor: "#F67D31", textColor: "#ffffff", weight: 1, message: "Quem é mais provável de trair o parceiro amoroso?" }
+    ]
+  },
+  {
+    id: 'tpl_6', name: "Roda da Fortuna",
+    eliminationMode: false,
+    options: [
+      { id: 't6_1', name: "x2", bgColor: "#3b82f6", textColor: "#ffffff", weight: 20, message: "Você ganhou x2!" },
+      { id: 't6_2', name: "x5", bgColor: "#8b5cf6", textColor: "#ffffff", weight: 10, message: "Você ganhou x5!" },
+      { id: 't6_3', name: "Passa a Vez", bgColor: "#64748b", textColor: "#ffffff", weight: 15, message: "Passa a Vez!" },
+      { id: 't6_4', name: "Perdeu Tudo!", bgColor: "#ef4444", textColor: "#ffffff", weight: 5, message: "Perdeu Tudo!" },
+      { id: 't6_5', name: "Jackpot 💰", bgColor: "#eab308", textColor: "#000000", weight: 1, message: "JACKPOT! Você ganhou o grande prêmio!" } // Probabilidade super rara
+    ]
+  },
+  {
+    id: 'tpl_7', name: "Roleta Clássica Europeia",
+    eliminationMode: false,
+    options: [
+      { id: 't7_0', name: "0", bgColor: "#22c55e", textColor: "#ffffff", weight: 1, message: "0 - Verde" },
+      ...Array.from({ length: 36 }, (_, i) => ({
+        id: 't7_' + (i + 1),
+        name: (i + 1).toString(),
+        bgColor: (i + 1) % 2 === 0 ? "#1e293b" : "#ef4444", // Preto e Vermelho intercalados
+        textColor: "#ffffff",
+        weight: 1,
+        message: `${i + 1} - ${(i + 1) % 2 === 0 ? "Preto" : "Vermelho"}`
+      }))
+    ]
+  },
+  {
+    id: 'tpl_8', name: "Roleta de Personagens",
+    eliminationMode: true,
+    options: [
+      { id: 't8_1', name: "O Herói", bgColor: "#3b82f6", textColor: "#ffffff", weight: 1, message: "Você é o Herói!" },
+      { id: 't8_2', name: "O Vilão", bgColor: "#ef4444", textColor: "#ffffff", weight: 1, message: "Você é o Vilão!" },
+      { id: 't8_3', name: "O Alívio Cômico", bgColor: "#eab308", textColor: "#000000", weight: 1, message: "Você é o Alívio Cômico!" },
+      { id: 't8_4', name: "O Sábio", bgColor: "#10b981", textColor: "#ffffff", weight: 1, message: "Você é o Sábio!" },
+      { id: 't8_5', name: "O Traidor", bgColor: "#64748b", textColor: "#ffffff", weight: 1, message: "Você é o Traidor!" }
+    ]
+  },
+  {
+    id: 'tpl_9', name: "Caixa Misteriosa",
+    eliminationMode: false,
+    options: [
+      { id: 't9_1', name: "Comum (50%)", bgColor: "#94a3b8", textColor: "#000000", weight: 50, message: "Você ganhou um item Comum." },
+      { id: 't9_2', name: "Raro (30%)", bgColor: "#3b82f6", textColor: "#ffffff", weight: 30, message: "Você ganhou um item Raro!" },
+      { id: 't9_3', name: "Épico (15%)", bgColor: "#a855f7", textColor: "#ffffff", weight: 15, message: "Você ganhou um item Épico!!!" },
+      { id: 't9_4', name: "Lendário (5%)", bgColor: "#eab308", textColor: "#000000", weight: 5, message: "LENDÁRIO! Prêmio máximo alcançado!" }
+    ]
+  },
+  {
+    id: 'tpl_10', name: "Roleta Russa",
+    eliminationMode: true, // Crucial para eliminar as câmaras vazias rodada a rodada
+    options: [
+      { id: 't10_1', name: "BANG! 💥 (Eliminado)", bgColor: "#7f1d1d", textColor: "#ffffff", weight: 1, message: "BANG! Você foi eliminado." }, // Vermelho escuro/sangue
+      { id: 't10_2', name: "Click...", bgColor: "#e2e8f0", textColor: "#000000", weight: 1, message: "Click... Você sobreviveu." },
+      { id: 't10_3', name: "Click...", bgColor: "#cbd5e1", textColor: "#000000", weight: 1, message: "Click... Você sobreviveu." },
+      { id: 't10_4', name: "Click...", bgColor: "#94a3b8", textColor: "#000000", weight: 1, message: "Click... Você sobreviveu." },
+      { id: 't10_5', name: "Click...", bgColor: "#64748b", textColor: "#ffffff", weight: 1, message: "Click... Você sobreviveu." },
+      { id: 't10_6', name: "Click...", bgColor: "#475569", textColor: "#ffffff", weight: 1, message: "Click... Você sobreviveu." }
+    ]
+  }
 ];
 
 // Referências do DOM
