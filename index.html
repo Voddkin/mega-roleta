@@ -181,6 +181,7 @@
             </div>
         </div>
     </div>
+
     <!-- Modal de Vitória -->
     <div id="winner-modal" class="modal-overlay">
         <div class="modal-content glass-panel">
@@ -193,11 +194,26 @@
         </div>
     </div>
 
+    <!-- Modal de Exclusão -->
+    <div id="delete-modal" class="modal-overlay">
+        <div class="modal-content glass-panel" style="width: 90%; max-width: 400px; padding: 2rem;">
+            <div style="margin-bottom: 1.5rem;">
+                <i class="fa-solid fa-triangle-exclamation" style="font-size: 3rem; color: var(--danger-color); margin-bottom: 1rem;"></i>
+                <h2 style="font-size: 1.4rem; margin-bottom: 0.5rem;">Excluir Roleta?</h2>
+                <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5;">Esta ação não pode ser desfeita. Tem certeza que deseja remover esta roleta permanentemente?</p>
+            </div>
+            <div style="display: flex; justify-content: center; gap: 10px;">
+                <button id="btn-cancel-delete" class="btn btn-outline">Cancelar</button>
+                <button id="btn-confirm-delete" class="btn btn-danger">Sim, Excluir</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Canvas para os confetes -->
     <canvas id="confetti-canvas"></canvas>
 
     <script src="db.js"></script>
     <script src="script.js"></script>
-<div id="toast-container" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
+<div id="toast-container" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; width: max-content; max-width: 90vw;"></div>
 </body>
 </html>
