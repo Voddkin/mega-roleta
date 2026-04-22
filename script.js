@@ -473,7 +473,7 @@ function renderOptionsList() {
         const thumbHTML = opt.image ? `<img src="${opt.image}" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover; border: 1px solid var(--panel-border); flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" alt="Thumb">` : '';
 
         item.innerHTML = `
-            <div class="drag-handle" title="Arraste para reordenar" style="width: 100%; text-align: center; color: var(--text-color); opacity: 0.3; cursor: grab; padding-bottom: 5px; margin-top: -5px; font-size: 1.2rem;">
+            <div class="drag-handle" title="Arraste para reordenar" style="width: fit-content; margin: -5px auto 0 auto; padding-bottom: 5px; color: var(--text-color); opacity: 0.3; cursor: grab; font-size: 1.2rem;">
                 <i class="fa-solid fa-grip-vertical"></i>
             </div>
             <div class="option-row" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: nowrap; gap: 8px; width: 100%;">
@@ -880,6 +880,8 @@ function setupEventListeners() {
     elements.tabBlank?.addEventListener('click', () => selectTab('blank'));
     elements.tabTemplate?.addEventListener('click', () => selectTab('template'));
     elements.btnSaveTemplate?.addEventListener('click', saveAsTemplate);
+    document.getElementById('btn-cancel-delete').addEventListener('click', closeDeleteModal);
+    document.getElementById('btn-confirm-delete').addEventListener('click', confirmDeleteRoulette);
 
     elements.toggleElimination.addEventListener('change', (e) => {
         const current = getCurrentRoulette();
@@ -1135,38 +1137,62 @@ function duplicateSpecificRoulette(id) {
     saveData();
     renderDashboard();
 }
+// Variável para guardar qual roleta o usuário quer apagar
+let rouletteToDeleteId = null;
+
+// Nova função que apenas ABRIRÁ a janela de confirmação
 function deleteSpecificRoulette(id) {
     if (appState.roulettes.length <= 1) {
-        alert("Você não pode excluir a última roleta!");
+        showToast("Aviso: Você não pode excluir a última roleta!"); // Trocado o alert feio pelo nosso aviso verde!
         return;
     }
-    if (confirm("Tem certeza que deseja excluir esta roleta?")) {
-        appState.roulettes = appState.roulettes.filter(r => r.id !== id);
-        if (appState.currentRouletteId === id) {
-            appState.currentRouletteId = appState.roulettes[0].id;
-        }
-        saveData();
-        renderDashboard();
+    rouletteToDeleteId = id;
+    document.getElementById('delete-modal').classList.add('show');
+}
+
+// Função para fechar a janela se ele desistir
+function closeDeleteModal() {
+    document.getElementById('delete-modal').classList.remove('show');
+    rouletteToDeleteId = null;
+}
+
+// Função que realmente executa a exclusão se ele confirmar
+function confirmDeleteRoulette() {
+    if (!rouletteToDeleteId) return;
+
+    appState.roulettes = appState.roulettes.filter(r => r.id !== rouletteToDeleteId);
+    
+    if (appState.currentRouletteId === rouletteToDeleteId) {
+        appState.currentRouletteId = appState.roulettes[0].id;
     }
+    
+    saveData();
+    renderDashboard();
+    closeDeleteModal();
+    showToast("Roleta excluída com sucesso!");
 }
 
 function showToast(message) {
-    const toast = document.createElement('div');
-    toast.style.background = 'var(--primary-color)';
-    toast.style.color = '#fff';
-    toast.style.padding = '10px 20px';
-    toast.style.borderRadius = '8px';
-    toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
-    toast.style.fontSize = '0.9rem';
-    toast.style.fontWeight = '500';
-    toast.textContent = message;
+    console.log("Disparando aviso:", message); // <-- Se isso aparecer no F12, o botão funciona!
 
-    elements.toastContainer.appendChild(toast);
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification';
+    toast.innerHTML = `<i class="fa-solid fa-circle-check"></i> <span>${escapeHTML(message)}</span>`;
+
+    // SISTEMA BLINDADO: Se o container não existir no HTML, ele cria na hora!
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; width: max-content; max-width: 90vw;';
+        document.body.appendChild(container);
+    }
+
+    container.appendChild(toast);
 
     setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.5s ease';
-        setTimeout(() => toast.remove(), 500);
+        toast.classList.add('hide');
+        setTimeout(() => toast.remove(), 400);
     }, 3000);
 }
 
@@ -1234,14 +1260,19 @@ function createTemplateCard(tpl, isUser) {
     const card = document.createElement('div');
     card.className = 'template-mini-card';
 
-    // Setup canvas 80x80
+    // Aumentamos a resolução interna do Canvas para 200x200 para ficar super nítido
     const canvas = document.createElement('canvas');
-    canvas.width = 80;
-    canvas.height = 80;
+    canvas.width = 200; 
+    canvas.height = 200;
+    
+    // Mas dizemos pro CSS manter o tamanho físico em 100x100
+    canvas.style.width = '100px';
+    canvas.style.height = '100px';
+    
     const ctx = canvas.getContext('2d');
-    const cx = 40;
-    const cy = 40;
-    const r = 38;
+    const cx = 100;
+    const cy = 100;
+    const r = 96;
 
     const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FDCB6E', '#6C5CE7', '#FF8ED4'];
 
@@ -1251,25 +1282,31 @@ function createTemplateCard(tpl, isUser) {
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
         ctx.fill();
     } else {
-        const sliceAngle = (Math.PI * 2) / tpl.options.length;
-        let startAngle = -Math.PI / 2;
+        // AGORA SIM: Idêntico ao preview (Começa do 0 e usa os Pesos reais)
+        let startAngle = 0;
+        const totalWeight = tpl.options.reduce((sum, opt) => sum + (opt.weight || 1), 0);
 
         tpl.options.forEach((opt, idx) => {
+            const sliceAngle = ((opt.weight || 1) / totalWeight) * 2 * Math.PI;
+
             ctx.beginPath();
             ctx.moveTo(cx, cy);
             ctx.arc(cx, cy, r, startAngle, startAngle + sliceAngle);
             ctx.closePath();
-            ctx.fillStyle = opt.color || colors[idx % colors.length];
+            
+            // CORREÇÃO DEFINITIVA: Puxa o 'bgColor' real da opção
+            ctx.fillStyle = opt.bgColor || colors[idx % colors.length]; 
             ctx.fill();
-            ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-            ctx.lineWidth = 1;
+            
+            ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+            ctx.lineWidth = 2; 
             ctx.stroke();
+            
             startAngle += sliceAngle;
         });
     }
 
-    const label = document.createElement('div');
-    label.className = 'template-label';
+    const label = document.createElement('span');
     label.innerText = tpl.name;
 
     card.appendChild(canvas);
@@ -1359,3 +1396,44 @@ function scrollCarousel(containerId, amount) {
     }
 }
 
+// --- FUNÇÃO PARA ARRASTAR COM O MOUSE NO COMPUTADOR ---
+function enableDragScroll(slider) {
+    if (!slider) return;
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+
+    slider.addEventListener('mousedown', (e) => {
+        isDown = true;
+        slider.classList.add('active');
+        startX = e.pageX - slider.offsetLeft;
+        scrollLeft = slider.scrollLeft;
+        // Desativa o scroll-behavior smooth durante o arrasto manual para não ficar "escorregadio"
+        slider.style.scrollBehavior = 'auto'; 
+    });
+    slider.addEventListener('mouseleave', () => {
+        isDown = false;
+        slider.classList.remove('active');
+        slider.style.scrollBehavior = 'smooth';
+    });
+    slider.addEventListener('mouseup', () => {
+        isDown = false;
+        slider.classList.remove('active');
+        slider.style.scrollBehavior = 'smooth';
+    });
+    slider.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - slider.offsetLeft;
+        const walk = (x - startX) * 2; // Multiplicador de velocidade do arrasto
+        slider.scrollLeft = scrollLeft - walk;
+    });
+}
+
+// Sobrescrevemos o final da renderTemplateLists para ativar o arrasto nela
+const originalRenderTemplateLists = renderTemplateLists;
+renderTemplateLists = function() {
+    originalRenderTemplateLists();
+    enableDragScroll(document.getElementById('user-templates-list'));
+    enableDragScroll(document.getElementById('default-templates-list'));
+};

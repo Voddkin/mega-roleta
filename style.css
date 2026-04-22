@@ -415,7 +415,8 @@ h1 {
     flex-direction: column;
     align-items: center;
     gap: 1.2rem;
-    transition: transform var(--transition-bounce), box-shadow var(--transition-speed) ease, border-color var(--transition-speed);
+    /* A mágica acontece aqui: aplicando a mesma transição suave para tudo */
+    transition: all 0.3s ease; 
     box-shadow: var(--shadow-soft);
     position: relative;
     overflow: hidden;
@@ -443,7 +444,8 @@ h1 {
 }
 
 .roulette-card:hover {
-    transform: translateY(-8px);
+    /* Reduzindo o pulo para -5px para ficar milimetricamente igual ao outro card */
+    transform: translateY(-5px); 
     box-shadow: var(--shadow-float), var(--shadow-glow);
     border-color: rgba(255,255,255,0.2);
 }
@@ -573,7 +575,8 @@ h1 {
     position: absolute;
     top: -8px; left: -8px; right: -8px; bottom: -8px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary-color), var(--success-color));
+
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
     opacity: 0.2;
     z-index: -1;
     filter: blur(10px);
@@ -779,7 +782,7 @@ input, select {
 
 input:focus, select:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    box-shadow: 0 0 8px var(--primary-color); 
     background-color: var(--input-bg);
 }
 
@@ -1142,28 +1145,31 @@ input:checked + .slider:before { transform: translateX(22px); }
 
 /* Ghost Card Creation */
 .ghost-card {
-    background: rgba(255,255,255,0.05);
+    background: transparent;
     backdrop-filter: blur(5px);
     -webkit-backdrop-filter: blur(5px);
-    border: 2px dashed rgba(255,255,255,0.2);
+    border: 2px dashed var(--panel-border);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.3s ease;
-    min-height: 250px; /* Match approximately the height of other cards */
+    /* A mágica está nestas duas linhas: */
+    min-height: 325px; /* Bate com a altura real dos outros cards */
+    height: 100%; /* Garante proporção perfeita na grade */
 }
 
 .ghost-card:hover {
-    background: rgba(255,255,255,0.1);
+    background: var(--input-bg);
     border-color: var(--primary-color);
-    transform: translateY(-5px);
+    transform: translateY(-5px); /* Mantendo a animação que arrumamos antes */
 }
 
 .ghost-card i {
     font-size: 3rem;
-    color: rgba(255,255,255,0.5);
+    /* Usa a cor secundária inteligente do seu tema */
+    color: var(--text-muted);
     margin-bottom: 1rem;
     transition: color 0.3s ease;
 }
@@ -1174,8 +1180,10 @@ input:checked + .slider:before { transform: translateX(22px); }
 
 .ghost-card span {
     font-weight: 600;
+    /* Usa a cor principal de texto do seu tema atual */
     color: var(--text-color);
     font-size: 1.1rem;
+    opacity: 0.8;
 }
 
 
@@ -1210,41 +1218,51 @@ input[type="color"]::-moz-color-swatch {
     box-shadow: 0 0 15px rgba(var(--primary-rgb, 0,0,0), 0.4);
 }
 
-/* Template Mini Cards */
+/* Template Mini Cards - VITRINE PREMIUM */
 .template-mini-card {
-    min-width: 110px;
+    min-width: 140px; /* Aumentado (era 110px) */
     display: flex;
     flex-direction: column;
     align-items: center;
     background: var(--input-bg);
     border: 2px solid transparent;
-    border-radius: 12px;
-    padding: 10px;
+    border-radius: 16px; /* Mais arredondado */
+    padding: 15px; /* Mais respiro */
     cursor: pointer;
-    transition: transform 0.2s ease, border-color 0.2s ease;
+    transition: all 0.3s var(--transition-bounce);
     flex-shrink: 0;
+    gap: 10px; /* Separa mais o texto do desenho */
 }
 
 .template-mini-card:hover {
-    transform: scale(1.05);
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    background: var(--panel-bg);
+}
+
+.template-mini-card.selected {
+    border-color: var(--primary-color);
+    background: rgba(99, 102, 241, 0.1);
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+    transform: translateY(-5px) scale(1.02);
 }
 
 .template-mini-card canvas {
-    width: 80px;
-    height: 80px;
+    width: 100px; /* Aumentado (era 80px) */
+    height: 100px;
     border-radius: 50%;
-    margin-bottom: 8px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.25); /* Sombra mais destacada */
 }
 
 .template-mini-card span {
-    font-size: 0.85rem;
-    font-weight: 500;
+    font-size: 0.95rem; /* Fonte maior */
+    font-weight: 600;
     text-align: center;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     width: 100%;
+    color: var(--text-color);
 }
 
 /* Carousel Layout */
@@ -1259,41 +1277,49 @@ input[type="color"]::-moz-color-swatch {
     display: flex;
     overflow-x: auto;
     scroll-behavior: smooth;
-    gap: 16px;
-    padding: 10px 5px;
+    gap: 20px; /* Mais espaço entre as roletas */
+    padding: 15px 5px; /* Dá espaço pro hover não cortar */
     width: 100%;
-    /* Hide scrollbar */
     -ms-overflow-style: none;
     scrollbar-width: none;
+    cursor: grab; /* Indica que pode ser arrastado */
+}
+.carousel-container.active {
+    cursor: grabbing; /* Muda a "mãozinha" quando estiver segurando */
 }
 .carousel-container::-webkit-scrollbar {
     display: none;
 }
 
+/* --- BOTÕES DO CARROSSEL (SETINHAS) --- */
 .carousel-btn {
     background: var(--panel-bg);
     border: 1px solid var(--panel-border);
     color: var(--text-color);
     border-radius: 50%;
-    width: 32px;
-    height: 32px;
+    width: 40px; /* Aumentado para ficar mais elegante */
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     position: absolute;
     z-index: 10;
-    transition: background 0.2s, transform 0.2s;
+    transition: all 0.3s var(--transition-bounce);
     flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
+
 .carousel-btn:hover {
     background: var(--primary-color);
     color: white;
-    transform: scale(1.1);
+    transform: scale(1.15) translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+    border-color: var(--primary-color);
 }
 
-.carousel-btn-left { left: -16px; }
-.carousel-btn-right { right: -16px; }
+.carousel-btn-left { left: -20px; }
+.carousel-btn-right { right: -20px; }
 
 /* --- NOVOS AJUSTES DE TEMA E LAYOUT --- */
 [data-mode="light"] .ghost-card {
@@ -1325,4 +1351,40 @@ optgroup option {
 optgroup {
     color: var(--bg-color);
     background-color: var(--text-color);
+}
+
+/* --- TOAST NOTIFICATIONS (Avisos Flutuantes) BLINDADO --- */
+.toast-notification {
+    background: #10b981 !important; 
+    color: white !important;
+    padding: 12px 24px;
+    border-radius: 50px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    font-size: 0.95rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Centraliza perfeitamente no mobile */
+    text-align: center; /* Evita que o texto fique torto */
+    gap: 10px;
+    width: max-content; /* Diz pro aviso usar o tamanho do texto */
+    max-width: 100%; /* Mas respeitar a tela do celular */
+    /* Nova animação vindo do teto */
+    animation: slideDownFade 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; 
+    z-index: 10000;
+}
+
+.toast-notification.hide {
+    animation: fadeOutUp 0.4s ease forwards; /* Animação sumindo pro teto */
+}
+
+/* Animações Invertidas (Vindo do Topo) */
+@keyframes slideDownFade {
+    from { opacity: 0; transform: translateY(-20px) scale(0.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes fadeOutUp {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to { opacity: 0; transform: translateY(-20px) scale(0.9); }
 }
