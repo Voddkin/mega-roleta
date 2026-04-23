@@ -63,6 +63,8 @@ const defaultRoulette = (name = "Minha Roleta") => ({
     id: Date.now().toString() + Math.floor(Math.random()*1000),
     name: name,
     pointerColor: "#ff0000",
+    spinSpeed: 5,
+    enableScoreboard: false,
     options: [
         { id: Date.now().toString() + '1', name: "Opção 1", bgColor: "#4CAF50", textColor: "#ffffff", weight: 1, message: "" },
         { id: Date.now().toString() + '2', name: "Opção 2", bgColor: "#2196F3", textColor: "#ffffff", weight: 1, message: "" },
@@ -199,6 +201,8 @@ defaultTemplates.forEach((tpl, i) => {
     tpl.id = 'def_' + i;
     // Garante que o showAdvanced seja levado adiante
     tpl.showAdvanced = !!tpl.showAdvanced; 
+    tpl.spinSpeed = 5;
+    tpl.enableScoreboard = false;
 
     if (tpl.options && Array.isArray(tpl.options)) {
         tpl.options = tpl.options.map((opt, j) => ({
@@ -231,6 +235,11 @@ const elements = {
 
     inputRouletteName: document.getElementById('input-roulette-name'),
     inputPointerColor: document.getElementById('input-pointer-color'),
+    inputSpinSpeed: document.getElementById('input-spin-speed'),
+    spinSpeedValue: document.getElementById('spin-speed-value'),
+    toggleScoreboard: document.getElementById('toggle-scoreboard'),
+    scoreboardContainer: document.getElementById('scoreboard-container'),
+    scoreboardList: document.getElementById('scoreboard-list'),
     toggleAdvanced: document.getElementById('toggle-advanced'),
     optionsList: document.getElementById('options-list'),
     btnEditRoulette: document.getElementById('btn-edit-roulette'),
@@ -276,6 +285,7 @@ let currentAngle = 0;
 let isSpinning = false;
 let isEditing = false;
 let sessionOptions = [];
+let sessionScores = {};
 let eliminatedOptions = [];
 let temporaryState = null;
 let lastWinningOptionId = null;
@@ -371,8 +381,10 @@ function initPlaySession() {
     const current = getCurrentRoulette();
     sessionOptions = JSON.parse(JSON.stringify(current.options));
     eliminatedOptions = [];
+    sessionScores = {};
 
     updateEliminationHistoryUI();
+    if (typeof updateScoreboardUI === 'function') updateScoreboardUI();
     drawRoulette();
 }
 
@@ -575,6 +587,11 @@ function renderEditor() {
     elements.pointer.style.borderTopColor = current.pointerColor;
     elements.optionsCount.textContent = current.options.length;
     
+    // Sincroniza Velocidade e Placar
+    if (elements.inputSpinSpeed) elements.inputSpinSpeed.value = current.spinSpeed || 5;
+    if (elements.spinSpeedValue) elements.spinSpeedValue.textContent = current.spinSpeed || 5;
+    if (elements.toggleScoreboard) elements.toggleScoreboard.checked = !!current.enableScoreboard;
+
     // Sincroniza o Switch de Eliminação
     elements.toggleElimination.checked = !!current.eliminationMode;
 
@@ -886,10 +903,12 @@ function spin() {
     elements.btnBack.disabled = true; // Impedir voltar enquanto gira
 
     // Configurações do giro
-    const spinTimeTotal = Math.random() * 4000 + 4000; // 4 a 8 segundos
+    const speed = r.spinSpeed || 5;
+    const baseTime = (11 - speed) * 1000;
+    const spinTimeTotal = baseTime + Math.random() * (baseTime * 0.5);
     let spinTime = 0;
 
-    const startVelocity = 0.25 + Math.random() * 0.1;
+    const startVelocity = 0.05 + (speed * 0.05) + Math.random() * 0.1;
 
     function easeOutBack(t, b, c, d, s = 1.70158) {
         t /= d;
@@ -990,12 +1009,70 @@ function hideWinnerModal() {
             drawRoulette();
         }
     }
+
+    if (r && r.enableScoreboard && lastWinningOptionId && !isEditing) {
+        sessionScores[lastWinningOptionId] = (sessionScores[lastWinningOptionId] || 0) + 1;
+        if (typeof updateScoreboardUI === 'function') updateScoreboardUI();
+    }
+
     lastWinningOptionId = null;
+}
+
+function updateScoreboardUI() {
+    const r = getCurrentRoulette();
+    if (!r || !r.enableScoreboard || Object.keys(sessionScores).length === 0) {
+        if (elements.scoreboardContainer) elements.scoreboardContainer.style.display = 'none';
+        if (elements.scoreboardList) elements.scoreboardList.innerHTML = '';
+        return;
+    }
+
+    if (elements.scoreboardContainer) elements.scoreboardContainer.style.display = 'block';
+    if (elements.scoreboardList) elements.scoreboardList.innerHTML = '';
+
+    const sortedScores = Object.entries(sessionScores)
+        .filter(([id, score]) => score > 0)
+        .sort((a, b) => b[1] - a[1]);
+
+    sortedScores.forEach(([id, score]) => {
+        const opt = r.options.find(o => o.id === id);
+        if (!opt) return;
+
+        const badge = document.createElement('div');
+        badge.style.padding = '4px 10px';
+        badge.style.borderRadius = '20px';
+        badge.style.fontSize = '0.8rem';
+        badge.style.fontWeight = 'bold';
+        badge.style.color = opt.textColor;
+        badge.style.background = opt.bgColor;
+        badge.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+        badge.textContent = `${opt.name}: ${score}`;
+        if (elements.scoreboardList) elements.scoreboardList.appendChild(badge);
+    });
 }
 
 // --- EVENT LISTENERS ---
 function setupEventListeners() {
     // Top Bar
+    elements.inputSpinSpeed?.addEventListener('input', (e) => {
+        elements.spinSpeedValue.textContent = e.target.value;
+    });
+
+    elements.inputSpinSpeed?.addEventListener('change', (e) => {
+        const current = getCurrentRoulette();
+        if (current) {
+            current.spinSpeed = parseInt(e.target.value);
+            saveData();
+        }
+    });
+
+    elements.toggleScoreboard?.addEventListener('change', (e) => {
+        const current = getCurrentRoulette();
+        if (current) {
+            current.enableScoreboard = e.target.checked;
+            saveData();
+        }
+    });
+
     elements.themeSelect.addEventListener('change', (e) => applyTheme(e.target.value));
     elements.btnEditRoulette.addEventListener('click', startEditing);
     elements.btnSaveEdit.addEventListener('click', saveEditing);

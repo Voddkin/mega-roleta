@@ -73,6 +73,10 @@
                     <h4 style="margin-bottom: 10px; font-size: 0.9rem; opacity: 0.8; text-align: center;">Ordem de Eliminação:</h4>
                     <div id="elimination-history" style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px;"></div>
                 </div>
+                <div id="scoreboard-container" style="display: none; margin-top: 20px; width: 100%;">
+                    <h4 style="margin-bottom: 10px; font-size: 0.9rem; opacity: 0.8; text-align: center;">Placar da Sessão:</h4>
+                    <div id="scoreboard-list" style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px;"></div>
+                </div>
             </section>
 
             <!-- Painel Direito: Configurações -->
@@ -96,6 +100,20 @@
                 <div class="config-group">
                     <label>Cor do Ponteiro:</label>
                     <input type="color" id="input-pointer-color" value="#ff0000">
+                </div>
+
+                <div class="config-group" style="flex-direction: row; align-items: center; justify-content: space-between; gap: 15px;">
+                    <div style="flex: 1;">
+                        <label for="input-spin-speed">Velocidade: <span id="spin-speed-value">5</span></label>
+                        <input type="range" id="input-spin-speed" min="1" max="10" value="5" style="width: 100%; accent-color: var(--primary-color);">
+                    </div>
+                    <div class="advanced-toggle-container" style="margin: 0; padding: 0.5rem; flex-shrink: 0; border: none; background: transparent;">
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-scoreboard">
+                            <span class="slider round"></span>
+                        </label>
+                        <span>Habilitar Placar</span>
+                    </div>
                 </div>
 
                 <div class="advanced-toggle-container">
