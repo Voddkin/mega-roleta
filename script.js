@@ -330,6 +330,11 @@ function resetData() {
     const initial = defaultRoulette();
     appState.roulettes = [initial];
     appState.currentRouletteId = initial.id;
+    
+    // Detecta se o sistema do usuário está em Modo Claro no primeiro acesso
+    const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+    appState.theme = prefersLight ? 'light' : 'dark';
+    
     saveData();
 }
 
@@ -815,8 +820,16 @@ function drawRoulette() {
 
     const ctx = elements.ctx;
     const canvas = elements.canvas;
-    const width = canvas.width;
-    const height = canvas.height;
+    
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+
+    const width = rect.width;
+    const height = rect.height;
     const centerX = width / 2;
     const centerY = height / 2;
     const radius = width / 2;

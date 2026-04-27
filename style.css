@@ -1155,8 +1155,6 @@ input:checked + .slider:before { transform: translateX(22px); }
     justify-content: center;
     cursor: pointer;
     transition: all 0.3s ease;
-    /* A mágica está nestas duas linhas: */
-    min-height: 325px; /* Bate com a altura real dos outros cards */
     height: 100%; /* Garante proporção perfeita na grade */
 }
 
