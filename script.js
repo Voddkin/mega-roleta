@@ -586,18 +586,28 @@ function renderEditor() {
     elements.inputPointerColor.value = current.pointerColor;
     elements.pointer.style.borderTopColor = current.pointerColor;
     elements.optionsCount.textContent = current.options.length;
+
+    // --- Sincroniza a Nova Barra de Velocidade ---
+    const speed = current.spinSpeed || 5;
+    const inputSpinSpeed = document.getElementById('input-spin-speed');
+    const spinSpeedValue = document.getElementById('spin-speed-value');
     
-    // Sincroniza Velocidade e Placar
-    if (elements.inputSpinSpeed) elements.inputSpinSpeed.value = current.spinSpeed || 5;
-    if (elements.spinSpeedValue) elements.spinSpeedValue.textContent = current.spinSpeed || 5;
-    if (elements.toggleScoreboard) elements.toggleScoreboard.checked = !!current.enableScoreboard;
+    if (inputSpinSpeed) inputSpinSpeed.value = speed;
+    const speedLabels = {1: "Extremo Lento", 3: "Lento", 5: "Normal", 8: "Rápido", 10: "Turbo"};
+    if (spinSpeedValue) spinSpeedValue.textContent = `${speedLabels[speed] || "Personalizado"} (${speed})`;
 
-    // Sincroniza o Switch de Eliminação
-    elements.toggleElimination.checked = !!current.eliminationMode;
-
-    // Sincroniza o Switch do Modo Avançado e aplica o visual
+    // --- Sincroniza os Modos e Aplica a Trava Mútua ---
     elements.toggleAdvanced.checked = !!current.showAdvanced;
     toggleAdvancedMode(); 
+    
+    const toggleElim = document.getElementById('toggle-elimination');
+    const toggleScore = document.getElementById('toggle-scoreboard');
+    
+    if (toggleElim) toggleElim.checked = !!current.eliminationMode;
+    if (toggleScore) toggleScore.checked = !!current.enableScoreboard;
+    
+    // Trava os botões visualmente assim que a tela abre
+    if(typeof window.syncMutexToggles === 'function') window.syncMutexToggles(); 
 
     renderOptionsList();
     drawRoulette();
@@ -902,13 +912,15 @@ function spin() {
     elements.btnSpin.disabled = true;
     elements.btnBack.disabled = true; // Impedir voltar enquanto gira
 
-    // Configurações do giro
-    const speed = r.spinSpeed || 5;
-    const baseTime = (11 - speed) * 1000;
-    const spinTimeTotal = baseTime + Math.random() * (baseTime * 0.5);
+    // Configurações do giro (Física Desacoplada: Velocidade vs Duração)
+    const speedLevel = r.spinSpeed || 5; 
+    
+    // startVelocity dita "quantas voltas ela dá" (Nível 10 = furacão, Nível 1 = tartaruga)
+    const startVelocity = (0.08 * speedLevel) + (Math.random() * 0.05);
+    
+    // spinTimeTotal dita "quanto tempo demora até parar" 
+    const spinTimeTotal = 10500 - ((speedLevel - 1) * 550) + (Math.random() * 1500);
     let spinTime = 0;
-
-    const startVelocity = 0.05 + (speed * 0.05) + Math.random() * 0.1;
 
     function easeOutBack(t, b, c, d, s = 1.70158) {
         t /= d;
@@ -1085,10 +1097,53 @@ function setupEventListeners() {
     document.getElementById('btn-cancel-delete').addEventListener('click', closeDeleteModal);
     document.getElementById('btn-confirm-delete').addEventListener('click', confirmDeleteRoulette);
 
-    elements.toggleElimination.addEventListener('change', (e) => {
-        const current = getCurrentRoulette();
-        current.eliminationMode = e.target.checked;
-        saveData();
+    // -- LÓGICA DO SLIDER DE VELOCIDADE --
+    const inputSpeed = document.getElementById('input-spin-speed');
+    const speedDisplay = document.getElementById('spin-speed-value');
+    const speedLabels = {1: "Extremo Lento", 3: "Lento", 5: "Normal", 8: "Rápido", 10: "Turbo"};
+
+    inputSpeed?.addEventListener('input', (e) => {
+        const val = e.target.value;
+        speedDisplay.textContent = `${speedLabels[val] || "Personalizado"} (${val})`;
+    });
+
+    inputSpeed?.addEventListener('change', (e) => {
+        const r = getCurrentRoulette();
+        if(r) { r.spinSpeed = parseInt(e.target.value); saveData(); }
+    });
+
+    // -- LÓGICA DE BLOQUEIO MÚTUO (ELIMINAÇÃO VS PLACAR) --
+    const toggleElim = document.getElementById('toggle-elimination');
+    const toggleScore = document.getElementById('toggle-scoreboard');
+    const boxElim = document.getElementById('box-elimination');
+    const boxScore = document.getElementById('box-scoreboard');
+
+    window.syncMutexToggles = function() {
+        if (toggleElim.checked) {
+            toggleScore.checked = false;
+            boxScore.classList.add('disabled-toggle');
+        } else {
+            boxScore.classList.remove('disabled-toggle');
+        }
+
+        if (toggleScore.checked) {
+            toggleElim.checked = false;
+            boxElim.classList.add('disabled-toggle');
+        } else {
+            boxElim.classList.remove('disabled-toggle');
+        }
+    };
+
+    toggleElim.addEventListener('change', (e) => {
+        syncMutexToggles();
+        const r = getCurrentRoulette();
+        if(r) { r.eliminationMode = toggleElim.checked; r.enableScoreboard = toggleScore.checked; saveData(); }
+    });
+
+    toggleScore.addEventListener('change', (e) => {
+        syncMutexToggles();
+        const r = getCurrentRoulette();
+        if(r) { r.eliminationMode = toggleElim.checked; r.enableScoreboard = toggleScore.checked; saveData(); }
     });
     elements.btnBack.addEventListener('click', () => {
         if(!isSpinning) showDashboard();
