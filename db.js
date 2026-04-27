@@ -38,8 +38,30 @@ async function saveToDB(state) {
         });
     } catch (err) {
         console.error('Falha ao salvar no IndexedDB', err);
-        // Fallback to localStorage se der ruim
-        localStorage.setItem('megaRouletteData', JSON.stringify(state));
+        try {
+            // Fallback de segurança: Remove imagens pesadas para não estourar o limite de 5MB do localStorage
+            const lightState = JSON.parse(JSON.stringify(state));
+            
+            if (lightState.roulettes) {
+                lightState.roulettes.forEach(r => {
+                    delete r.profileImage;
+                    if (r.options) r.options.forEach(opt => delete opt.image);
+                });
+            }
+            
+            if (lightState.userTemplates) {
+                lightState.userTemplates.forEach(t => {
+                    delete t.profileImage;
+                    if (t.options) t.options.forEach(opt => delete opt.image);
+                });
+            }
+            
+            localStorage.setItem('megaRouletteData', JSON.stringify(lightState));
+            console.warn("Dados salvos no modo de segurança (sem imagens) devido a restrições do navegador.");
+        } catch (fallbackErr) {
+            console.error('Falha crítica de armazenamento', fallbackErr);
+            alert("Atenção: O armazenamento do seu navegador está cheio ou bloqueando salvamentos. Algumas alterações podem não ser salvas.");
+        }
     }
 }
 

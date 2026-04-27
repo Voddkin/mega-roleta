@@ -219,7 +219,6 @@ defaultTemplates.forEach((tpl, i) => {
 
 // Referências do DOM
 const elements = {
-    themeSelect: document.getElementById('theme-select'),
     btnBack: document.getElementById('btn-back'),
 
     // Views
@@ -304,6 +303,11 @@ async function init() {
     }
     setupEventListeners();
     applyTheme(appState.theme);
+    // Sincroniza o texto do dropdown customizado com o tema carregado do banco
+    const currentThemeItem = document.querySelector(`#theme-dropdown li[data-value="${appState.theme}"]`);
+    if (currentThemeItem) {
+        document.querySelector('#dropdown-current span').innerText = currentThemeItem.innerText;
+    }
     showDashboard(); // Começar sempre no dashboard
 }
 
@@ -395,7 +399,6 @@ function initPlaySession() {
 
 function startEditing() {
     if (isSpinning) return; // Edge case protected
-    if (isSpinning) return;
     isEditing = true;
     elements.configSection.style.display = 'block';
     elements.btnSpin.style.display = 'none';
@@ -467,11 +470,11 @@ function renderDashboard() {
                 ${profileImageHTML}
                 <div style="position: absolute; bottom: -10px; right: -10px; display: flex; gap: 5px;">
                     <label class="btn btn-primary" title="Fazer Upload de Imagem" style="border-radius: 50%; width: 32px; height: 32px; min-width: 32px; min-height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; margin: 0;">
-                        <i class="fa-solid fa-folder-open" style="color: white !important; font-size: 14px;"></i>
+                        <i class="fa-solid fa-folder-open" style="font-size: 14px;"></i>
                         <input type="file" style="display:none;" accept="image/png, image/jpeg, image/webp" data-id="${r.id}" class="profile-image-input">
                     </label>
                     <button class="btn btn-primary" title="Escolher Ícone Padrão" onclick="showDefaultIconsGallery('${r.id}')" style="border-radius: 50%; width: 32px; height: 32px; min-width: 32px; min-height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; margin: 0;">
-                        <i class="fa-solid fa-palette" style="color: white !important; font-size: 14px;"></i>
+                        <i class="fa-solid fa-palette" style="font-size: 14px;"></i>
                     </button>
                 </div>
                 ${r.profileImage ? `<button class="remove-profile-btn" title="Remover Foto" data-id="${r.id}" style="position: absolute; top: 0; right: 0; background: var(--danger-color); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"><i class="fa-solid fa-xmark"></i></button>` : ''}
@@ -697,9 +700,10 @@ function renderOptionsList() {
 
     // Inicializar SortableJS para Drag and Drop de opções
     if (window.Sortable) {
-        // Destroi se já existir pra não acumular
+        // Destroi se já existir pra não acumular e libera da memória
         if (elements.optionsList._sortable) {
             elements.optionsList._sortable.destroy();
+            elements.optionsList._sortable = null; 
         }
         elements.optionsList._sortable = Sortable.create(elements.optionsList, {
             handle: '.drag-handle', // Usa a área com os pontinhos
@@ -1098,7 +1102,36 @@ function setupEventListeners() {
         }
     });
 
-    elements.themeSelect.addEventListener('change', (e) => applyTheme(e.target.value));
+    // Lógica do Novo Dropdown Customizado de Temas
+    const themeDropdown = document.getElementById('theme-dropdown');
+    const dropdownCurrent = document.getElementById('dropdown-current');
+    const dropdownMenu = themeDropdown.querySelector('.dropdown-menu');
+
+    // Abrir/Fechar Dropdown
+    dropdownCurrent.addEventListener('click', (e) => {
+        e.stopPropagation();
+        themeDropdown.classList.toggle('active');
+    });
+
+    // Fechar ao clicar fora
+    document.addEventListener('click', () => {
+        themeDropdown.classList.remove('active');
+    });
+
+    // Selecionar Opção e Aplicar Tema
+    dropdownMenu.querySelectorAll('li').forEach(item => {
+        item.addEventListener('click', () => {
+            const value = item.getAttribute('data-value');
+            const label = item.innerText;
+            
+            // Atualiza o texto visível no botão do dropdown
+            dropdownCurrent.querySelector('span').innerText = label;
+            themeDropdown.classList.remove('active');
+            
+            // Chama a sua função original de aplicar tema
+            applyTheme(value);
+        });
+    });
     elements.btnEditRoulette.addEventListener('click', startEditing);
     elements.btnSaveEdit.addEventListener('click', saveEditing);
     elements.btnCancelEdit.addEventListener('click', cancelEditing);
@@ -1128,33 +1161,40 @@ function setupEventListeners() {
     // -- LÓGICA DE BLOQUEIO MÚTUO (ELIMINAÇÃO VS PLACAR) --
     const toggleElim = document.getElementById('toggle-elimination');
     const toggleScore = document.getElementById('toggle-scoreboard');
-    const boxElim = document.getElementById('box-elimination');
-    const boxScore = document.getElementById('box-scoreboard');
 
-    window.syncMutexToggles = function() {
-        if (toggleElim.checked) {
-            toggleScore.checked = false;
-            boxScore.classList.add('disabled-toggle');
-        } else {
-            boxScore.classList.remove('disabled-toggle');
-        }
+    if (!window.syncMutexToggles) {
+        window.syncMutexToggles = function() {
+            const tElim = document.getElementById('toggle-elimination');
+            const tScore = document.getElementById('toggle-scoreboard');
+            const bElim = document.getElementById('box-elimination');
+            const bScore = document.getElementById('box-scoreboard');
 
-        if (toggleScore.checked) {
-            toggleElim.checked = false;
-            boxElim.classList.add('disabled-toggle');
-        } else {
-            boxElim.classList.remove('disabled-toggle');
-        }
-    };
+            if (!tElim || !tScore) return;
 
-    toggleElim.addEventListener('change', (e) => {
-        syncMutexToggles();
+            if (tElim.checked) {
+                tScore.checked = false;
+                if(bScore) bScore.classList.add('disabled-toggle');
+            } else {
+                if(bScore) bScore.classList.remove('disabled-toggle');
+            }
+
+            if (tScore.checked) {
+                tElim.checked = false;
+                if(bElim) bElim.classList.add('disabled-toggle');
+            } else {
+                if(bElim) bElim.classList.remove('disabled-toggle');
+            }
+        };
+    }
+
+    toggleElim?.addEventListener('change', () => {
+        window.syncMutexToggles();
         const r = getCurrentRoulette();
         if(r) { r.eliminationMode = toggleElim.checked; r.enableScoreboard = toggleScore.checked; saveData(); }
     });
 
-    toggleScore.addEventListener('change', (e) => {
-        syncMutexToggles();
+    toggleScore?.addEventListener('change', () => {
+        window.syncMutexToggles();
         const r = getCurrentRoulette();
         if(r) { r.eliminationMode = toggleElim.checked; r.enableScoreboard = toggleScore.checked; saveData(); }
     });
