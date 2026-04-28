@@ -68,6 +68,10 @@ const defaultRoulette = (name = "Minha Roleta") => ({
     spinSpeed: 5,
     enableScoreboard: false,
     isFavorite: false,
+    mysteryMode: false,
+    fatigueMode: false,
+    celebrationLevel: "normal",
+    spinDirection: "clockwise",
     options: [
         { id: Date.now().toString() + '1', name: "Opção 1", bgColor: "#4CAF50", textColor: "#ffffff", weight: 1, message: "" },
         { id: Date.now().toString() + '2', name: "Opção 2", bgColor: "#2196F3", textColor: "#ffffff", weight: 1, message: "" },
@@ -206,6 +210,10 @@ defaultTemplates.forEach((tpl, i) => {
     tpl.showAdvanced = !!tpl.showAdvanced; 
     tpl.spinSpeed = 5;
     tpl.enableScoreboard = false;
+    tpl.mysteryMode = false;
+    tpl.fatigueMode = false;
+    tpl.celebrationLevel = "normal";
+    tpl.spinDirection = "clockwise";
 
     if (tpl.options && Array.isArray(tpl.options)) {
         tpl.options = tpl.options.map((opt, j) => ({
@@ -315,6 +323,18 @@ function validateRouletteSchema(data) {
         data.roulettes.forEach(r => {
             if (r.isFavorite === undefined) {
                 r.isFavorite = false;
+            }
+            if (r.mysteryMode === undefined) {
+                r.mysteryMode = false;
+            }
+            if (r.fatigueMode === undefined) {
+                r.fatigueMode = false;
+            }
+            if (r.celebrationLevel === undefined) {
+                r.celebrationLevel = "normal";
+            }
+            if (r.spinDirection === undefined) {
+                r.spinDirection = "clockwise";
             }
         });
     }
@@ -613,6 +633,8 @@ function renderEditor() {
     // --- Sincroniza a Nova Barra de Velocidade ---
     const speed = current.spinSpeed || 5;
     const inputSpinSpeed = document.getElementById('input-spin-speed');
+    const inputSpinDirection = document.getElementById('input-spin-direction');
+    if (inputSpinDirection) inputSpinDirection.value = current.spinDirection || "clockwise";
     const spinSpeedValue = document.getElementById('spin-speed-value');
     
     if (inputSpinSpeed) inputSpinSpeed.value = speed;
@@ -629,6 +651,15 @@ function renderEditor() {
     if (toggleElim) toggleElim.checked = !!current.eliminationMode;
     if (toggleScore) toggleScore.checked = !!current.enableScoreboard;
     
+    // --- Sincroniza os Novos Modos ---
+    const toggleMystery = document.getElementById('toggle-mystery');
+    const toggleFatigue = document.getElementById('toggle-fatigue');
+    const selectCelebration = document.getElementById('select-celebration');
+
+    if (toggleMystery) toggleMystery.checked = !!current.mysteryMode;
+    if (toggleFatigue) toggleFatigue.checked = !!current.fatigueMode;
+    if (selectCelebration) selectCelebration.value = current.celebrationLevel || "normal";
+
     // Trava os botões visualmente assim que a tela abre
     if(typeof window.syncMutexToggles === 'function') window.syncMutexToggles(); 
 
@@ -975,6 +1006,12 @@ function spin() {
     const spinTimeTotal = 10500 - ((speedLevel - 1) * 550) + (Math.random() * 1500);
     let spinTime = 0;
 
+    // Antecipação
+    const anticipationTimeTotal = 300;
+    let anticipationTime = 0;
+    let isAnticipating = true;
+    const anticipationVelocity = 0.02;
+
     function easeOutBack(t, b, c, d, s = 1.70158) {
         t /= d;
         t--;
@@ -982,15 +1019,27 @@ function spin() {
     }
 
     function rotateAnimation() {
-        spinTime += 30;
+        let angleChange = 0;
+        const isClockwise = r.spinDirection !== 'counter-clockwise';
 
-        if (spinTime >= spinTimeTotal) {
-            stopRotate();
-            return;
+        if (isAnticipating) {
+            anticipationTime += 30;
+            if (anticipationTime >= anticipationTimeTotal) {
+                isAnticipating = false;
+            } else {
+                // Pequeno giro para trás
+                angleChange = anticipationVelocity * (anticipationTime / anticipationTimeTotal);
+                currentAngle += isClockwise ? -angleChange : angleChange;
+            }
+        } else {
+            spinTime += 30;
+            if (spinTime >= spinTimeTotal) {
+                stopRotate();
+                return;
+            }
+            angleChange = easeOutBack(spinTime, startVelocity, -startVelocity, spinTimeTotal, 0.3);
+            currentAngle += isClockwise ? angleChange : -angleChange;
         }
-
-        const angleChange = easeOutBack(spinTime, startVelocity, -startVelocity, spinTimeTotal, 0.3);
-        currentAngle += angleChange;
 
         if (currentAngle >= 2 * Math.PI) currentAngle -= 2 * Math.PI;
         if (currentAngle < 0) currentAngle += 2 * Math.PI;
@@ -1016,7 +1065,12 @@ function determineWinner() {
     const activeOptions = isEditing ? r.options : sessionOptions;
     const totalWeight = activeOptions.reduce((sum, opt) => sum + opt.weight, 0);
 
-    let pointerAngle = (1.5 * Math.PI) - currentAngle;
+    const isClockwise = r.spinDirection !== 'counter-clockwise';
+
+    // Calcula o ângulo do ponteiro baseado na direção do giro
+    let pointerAngle = isClockwise
+        ? (1.5 * Math.PI) - currentAngle
+        : currentAngle + (0.5 * Math.PI); // Ajuste matemático para anti-horário
 
     while (pointerAngle < 0) pointerAngle += 2 * Math.PI;
     while (pointerAngle >= 2 * Math.PI) pointerAngle -= 2 * Math.PI;
@@ -1192,6 +1246,31 @@ function setupEventListeners() {
     inputSpeed?.addEventListener('change', (e) => {
         const r = getCurrentRoulette();
         if(r) { r.spinSpeed = parseInt(e.target.value); saveData(); }
+    });
+
+    const inputDirection = document.getElementById('input-spin-direction');
+    inputDirection?.addEventListener('change', (e) => {
+        const r = getCurrentRoulette();
+        if(r) { r.spinDirection = e.target.value; saveData(); }
+    });
+
+    // -- NOVOS MODOS --
+    const toggleMystery = document.getElementById('toggle-mystery');
+    toggleMystery?.addEventListener('change', (e) => {
+        const r = getCurrentRoulette();
+        if(r) { r.mysteryMode = e.target.checked; saveData(); }
+    });
+
+    const toggleFatigue = document.getElementById('toggle-fatigue');
+    toggleFatigue?.addEventListener('change', (e) => {
+        const r = getCurrentRoulette();
+        if(r) { r.fatigueMode = e.target.checked; saveData(); }
+    });
+
+    const selectCelebration = document.getElementById('select-celebration');
+    selectCelebration?.addEventListener('change', (e) => {
+        const r = getCurrentRoulette();
+        if(r) { r.celebrationLevel = e.target.value; saveData(); }
     });
 
     // -- LÓGICA DE BLOQUEIO MÚTUO (ELIMINAÇÃO VS PLACAR) --
