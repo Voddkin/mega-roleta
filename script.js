@@ -303,11 +303,6 @@ async function init() {
     }
     setupEventListeners();
     applyTheme(appState.theme);
-    // Sincroniza o texto do dropdown customizado com o tema carregado do banco
-    const currentThemeItem = document.querySelector(`#theme-dropdown li[data-value="${appState.theme}"]`);
-    if (currentThemeItem) {
-        document.querySelector('#dropdown-current span').innerText = currentThemeItem.innerText;
-    }
     showDashboard(); // Começar sempre no dashboard
 }
 
@@ -803,9 +798,30 @@ function deleteCurrentRoulette() {
 }
 
 function applyTheme(themeName) {
+    // 1. Prevenção de erro: se não vier tema válido, assume o escuro padrão
+    if (!themeName) themeName = 'dark';
+    
+    // 2. Aplica o tema no HTML
     document.body.setAttribute('data-theme', themeName);
     appState.theme = themeName;
-    elements.themeSelect.value = themeName;
+    
+    // 3. Atualiza o texto do botão de forma segura
+    const activeItem = document.querySelector(`#theme-dropdown li[data-value="${themeName}"]`);
+    const dropdownSpan = document.querySelector('#dropdown-current span');
+    
+    if (dropdownSpan) {
+        if (activeItem) {
+            // MUDANÇA CRUCIAL: textContent em vez de innerText!
+            dropdownSpan.textContent = activeItem.textContent; 
+        } else {
+            // Failsafe
+            dropdownSpan.textContent = 'Escuro Padrão';
+            document.body.setAttribute('data-theme', 'dark');
+            appState.theme = 'dark';
+        }
+    }
+    
+    // 4. Salva no banco de dados local
     saveData();
 }
 

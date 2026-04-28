@@ -189,6 +189,22 @@
     --shadow-float: 0 8px 16px rgba(0, 0, 0, 0.04);
 }
 
+[data-theme="oasis"] {
+    --bg-color: #e0f7fa; /* Fundo base água cristalina */
+    --bg-gradient: radial-gradient(circle at top center, #e0fefe, #e0f2fe, #f0f9ff); /* Efeito de profundidade de piscina natural */
+    --panel-bg: rgba(255, 255, 255, 0.85);
+    --panel-border: rgba(6, 182, 212, 0.25);
+    --text-color: #083344; /* Cyan ultra escuro (fundo do oceano, não cansa a vista) */
+    --text-muted: #0e7490;
+    --primary-color: #06b6d4; /* Cyan/Acqua puríssimo */
+    --primary-hover: #0891b2;
+    --btn-text: #ffffff;
+    --accent-color: #22d3ee; /* Neon Acqua suave para os switches */
+    --input-bg: #ffffff;
+    --input-border: rgba(6, 182, 212, 0.3);
+    --shadow-glow: 0 0 25px rgba(6, 182, 212, 0.25);
+}
+
 [data-theme="sunset"] {
     --bg-color: #fff5f5;
     --bg-gradient: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
@@ -234,6 +250,22 @@
     --input-bg: #ffffff;
     --input-border: rgba(74, 222, 128, 0.3);
     --shadow-glow: 0 0 20px rgba(16, 185, 129, 0.1);
+}
+
+[data-theme="provence"] {
+    --bg-color: #fcfaf8; /* Off-white com toque de creme nostálgico (papel antigo) */
+    --bg-gradient: linear-gradient(135deg, #f4ebff 0%, #fdf8f5 100%);
+    --panel-bg: rgba(255, 255, 255, 0.9);
+    --panel-border: rgba(124, 58, 237, 0.15);
+    --text-color: #2e1065; /* Roxo veludo quase preto (elegância pura) */
+    --text-muted: #6d28d9;
+    --primary-color: #7c3aed; /* Roxo Lavanda Intenso */
+    --primary-hover: #5b21b6;
+    --btn-text: #ffffff;
+    --accent-color: #d4af37; /* Dourado envelhecido nos botões de ativar (Nostalgia e Luxo) */
+    --input-bg: #ffffff;
+    --input-border: rgba(124, 58, 237, 0.25);
+    --shadow-glow: 0 0 25px rgba(124, 58, 237, 0.2);
 }
 
 [data-theme="aurora"] {
@@ -438,7 +470,7 @@ h1 {
     flex-direction: column;
     align-items: center;
     gap: 1.2rem;
-    /* A mágica acontece aqui: aplicando a mesma transição suave para tudo */
+    min-height: 350px; /* GARANTE QUE TODOS OS CARDS TENHAM A MESMA ALTURA */
     transition: all 0.3s ease; 
     box-shadow: var(--shadow-soft);
     position: relative;
@@ -447,18 +479,7 @@ h1 {
 
 /* 1. O Novo Contorno Interno Completo */
 .roulette-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0; /* Expande para os 4 lados */
-    border-radius: inherit; /* Acompanha o arredondamento do card */
-    padding: 2px; /* Espessura do contorno (pode alterar se achar fino/grosso) */
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover)); /* Tira o verde, usa o gradiente do tema! */
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    opacity: 0;
-    transition: opacity var(--transition-speed);
-    pointer-events: none; /* Garante que o contorno não bloqueie os cliques */
+    display: none; 
 }
 
 /* 2. Correção do Card de "Criar Nova Roleta" */
@@ -467,10 +488,13 @@ h1 {
 }
 
 .roulette-card:hover {
-    /* Reduzindo o pulo para -5px para ficar milimetricamente igual ao outro card */
     transform: translateY(-5px); 
-    box-shadow: var(--shadow-float), var(--shadow-glow);
-    border-color: rgba(255,255,255,0.2);
+    border-color: var(--primary-color);
+    /* A MÁGICA ESTÁ AQUI: 
+       O "0 0 0 1px" cria um contorno físico externo idêntico à cor do tema, 
+       somando com o 1px da border normal, gerando uma borda de 2px forte, 
+       nítida e sem quebrar o layout! */
+    box-shadow: 0 0 0 1px var(--primary-color), var(--shadow-float), var(--shadow-glow);
 }
 
 .roulette-card:hover::before {
@@ -1055,7 +1079,8 @@ input:checked + .slider:before { transform: translateX(22px); }
 [data-theme="aurora"] .modal-content,
 [data-theme="emerald"] .modal-content,
 [data-theme="sunset"] .modal-content,
-[data-theme="gold_light"] .modal-content {
+[data-theme="oasis"] .modal-content,
+[data-theme="provence"] .modal-content {
     background: rgba(255, 255, 255, 0.95);
     color: #1e293b; /* Texto escuro para leitura perfeita */
 }
@@ -1066,7 +1091,9 @@ input:checked + .slider:before { transform: translateX(22px); }
 [data-theme="cafe"] .carousel-container div,
 [data-theme="aurora"] .carousel-container div,
 [data-theme="emerald"] .carousel-container div,
-[data-theme="sunset"] .carousel-container div {
+[data-theme="sunset"] .carousel-container div,
+[data-theme="oasis"] .carousel-container div,
+[data-theme="provence"] .carousel-container div {
     color: #64748b !important; /* Cinza ardósia legível */
     font-weight: 500;
 }
@@ -1395,8 +1422,11 @@ input[type="color"]::-moz-color-swatch {
 [data-theme="light"] .ghost-card,
 [data-theme="snow"] .ghost-card,
 [data-theme="sunset"] .ghost-card,
+[data-theme="emerald"] .ghost-card,
 [data-theme="aurora"] .ghost-card,
-[data-theme="paper"] .ghost-card {
+[data-theme="cafe"] .ghost-card,
+[data-theme="oasis"] .ghost-card,
+[data-theme="provence"] .ghost-card {
     border: 2px dashed rgb(0 0 0 / 25%);
     background: rgb(255 255 255 / 34%);
 }
@@ -1404,16 +1434,22 @@ input[type="color"]::-moz-color-swatch {
 [data-theme="light"] .ghost-card:hover,
 [data-theme="snow"] .ghost-card:hover,
 [data-theme="sunset"] .ghost-card:hover,
+[data-theme="emerald"] .ghost-card:hover,
 [data-theme="aurora"] .ghost-card:hover,
-[data-theme="paper"] .ghost-card:hover {
+[data-theme="cafe"] .ghost-card:hover,
+[data-theme="oasis"] .ghost-card:hover,
+[data-theme="provence"] .ghost-card:hover {
     border-color: var(--primary-color);
 }
 
 [data-theme="light"] .ghost-card span,
 [data-theme="snow"] .ghost-card span,
 [data-theme="sunset"] .ghost-card span,
+[data-theme="emerald"] .ghost-card span,
 [data-theme="aurora"] .ghost-card span,
-[data-theme="paper"] .ghost-card span {
+[data-theme="cafe"] .ghost-card span,
+[data-theme="oasis"] .ghost-card span,
+[data-theme="provence"] .ghost-card span {
     color: var(--text-color);
 }
 
@@ -1596,6 +1632,107 @@ section.roulette-section.glass-panel {
 [data-theme="cafe"] .dropdown-menu li:hover,
 [data-theme="aurora"] .dropdown-menu li:hover,
 [data-theme="emerald"] .dropdown-menu li:hover,
-[data-theme="sunset"] .dropdown-menu li:hover {
+[data-theme="sunset"] .dropdown-menu li:hover,
+[data-theme="oasis"] .dropdown-menu li:hover,
+[data-theme="provence"] .dropdown-menu li:hover {
     background: rgba(0, 0, 0, 0.05);
+}
+
+/* --- RESPONSIVIDADE DO DROPDOWN PARA CELULARES --- */
+@media (max-width: 600px) {
+    /* Desativa a âncora local para podermos usar a largura total do Header */
+    .theme-selector, .custom-dropdown {
+        position: static;
+    }
+    
+    .header-content {
+        position: relative; /* O Header inteiro vira o ponto de referência */
+    }
+
+    .dropdown-menu {
+        width: 94vw; /* Ocupa quase a tela toda */
+        max-width: 400px;
+        
+        /* Centralização Absoluta Perfeita */
+        left: 50%;
+        top: calc(100% + 15px);
+        transform: translateX(-50%) translateY(-10px);
+        
+        /* FUNDO SÓLIDO PREMIUM: Sem vidro, sem mistura com a roleta! */
+        background: var(--bg-color); 
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        
+        border: 2px solid var(--panel-border);
+        box-shadow: 0 25px 50px rgba(0,0,0,0.8); /* Sombra intensa para destacar flutuação */
+        border-radius: 20px;
+        
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        padding: 15px 5px;
+        max-height: 60vh; 
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .custom-dropdown.active .dropdown-menu {
+        transform: translateX(-50%) translateY(0);
+    }
+
+    /* A LINHA VERTICAL NO MEIO */
+    .dropdown-menu::before {
+        content: '';
+        position: absolute;
+        top: 20px; 
+        bottom: 20px; 
+        left: 50%;
+        width: 1px;
+        background: var(--text-muted);
+        opacity: 0.3;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    /* Proteção de Z-Index para os itens não ficarem atrás da linha */
+    .dropdown-menu .dropdown-group, .dropdown-menu ul { z-index: 1; }
+    
+    /* Posicionamento do Grid */
+    .dropdown-menu .dropdown-group:nth-of-type(1) { grid-column: 1; grid-row: 1; text-align: center; }
+    .dropdown-menu #themes-dark { grid-column: 1; grid-row: 2; padding-right: 5px; }
+    
+    .dropdown-menu .dropdown-group:nth-of-type(2) { grid-column: 2; grid-row: 1; text-align: center; margin-top: 0; }
+    .dropdown-menu #themes-light { grid-column: 2; grid-row: 2; padding-left: 5px; }
+
+    /* Ajuste dos botões da lista para celular (Mais fáceis de tocar) */
+    .dropdown-menu li {
+        padding: 12px 5px;
+        text-align: center;
+        font-size: 0.85rem;
+        margin: 4px 5px;
+        border-radius: 10px;
+        transition: all 0.2s ease;
+        background: var(--input-bg); /* Fundo sutil para destacar os botões */
+    }
+
+    /* Animação forte no Hover/Touch do celular */
+    .dropdown-menu li:hover, .dropdown-menu li:active {
+        background: var(--primary-color);
+        color: white;
+        transform: scale(1.05);
+    }
+}
+
+/* --- AJUSTE DE PROPORÇÃO DOS CARDS NO CELULAR --- */
+@media (max-width: 600px) {
+    .roulettes-grid {
+        display: flex;
+        flex-direction: column;
+        align-items: center; /* Centraliza perfeitamente na tela */
+        gap: 2rem;
+    }
+    
+    .roulette-card {
+        width: 100%;
+        max-width: 300px; /* Trava a largura para forçar o formato vertical 3:4 premium */
+    }
 }
