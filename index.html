@@ -59,7 +59,10 @@
         <section id="dashboard-view" class="view-section active">
             <div class="dashboard-header">
                 <h2>Minhas Roletas</h2>
-
+                <div class="dashboard-tabs" style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button id="tab-all-roulettes" class="btn btn-primary btn-sm active-mode">Todas as Roletas</button>
+                    <button id="tab-favorites" class="btn btn-outline btn-sm"><i class="fa-solid fa-star"></i> Favoritas</button>
+                </div>
             </div>
             <div id="roulettes-grid" class="roulettes-grid">
                 <!-- Cards injetados via JS -->
@@ -99,7 +102,7 @@
                         <div class="config-actions" style="display: flex; gap: 5px;">
                             <button id="btn-save-edit" class="btn btn-success btn-sm">Salvar</button>
                             <button id="btn-cancel-edit" class="btn btn-danger btn-sm">Cancelar</button>
-                            <button id="btn-save-template" class="btn btn-outline btn-sm" title="Salvar como Modelo"><i class="fa-solid fa-star"></i></button>
+                            <button id="btn-save-template" class="btn btn-outline btn-sm" title="Salvar como Modelo"><i class="fa-solid fa-bookmark"></i></button>
 
                         </div>
                     </div>

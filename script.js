@@ -58,6 +58,8 @@ let appState = {
     userTemplates: []
 };
 
+let showOnlyFavorites = false;
+
 // Objeto padrão para uma nova roleta
 const defaultRoulette = (name = "Minha Roleta") => ({
     id: Date.now().toString() + Math.floor(Math.random()*1000),
@@ -65,6 +67,7 @@ const defaultRoulette = (name = "Minha Roleta") => ({
     pointerColor: "#ff0000",
     spinSpeed: 5,
     enableScoreboard: false,
+    isFavorite: false,
     options: [
         { id: Date.now().toString() + '1', name: "Opção 1", bgColor: "#4CAF50", textColor: "#ffffff", weight: 1, message: "" },
         { id: Date.now().toString() + '2', name: "Opção 2", bgColor: "#2196F3", textColor: "#ffffff", weight: 1, message: "" },
@@ -297,6 +300,7 @@ async function init() {
         if (saved) {
             appState = saved;
             if (!appState.roulettes || appState.roulettes.length === 0) resetData();
+            validateRouletteSchema(appState);
         } else resetData();
     } else {
         loadData();
@@ -304,6 +308,16 @@ async function init() {
     setupEventListeners();
     applyTheme(appState.theme);
     showDashboard(); // Começar sempre no dashboard
+}
+
+function validateRouletteSchema(data) {
+    if (data && data.roulettes && Array.isArray(data.roulettes)) {
+        data.roulettes.forEach(r => {
+            if (r.isFavorite === undefined) {
+                r.isFavorite = false;
+            }
+        });
+    }
 }
 
 function loadData() {
@@ -316,6 +330,7 @@ function loadData() {
                 appState.roulettes = [initial];
                 appState.currentRouletteId = initial.id;
             }
+            validateRouletteSchema(appState);
         } catch (e) {
             console.error("Erro ao carregar dados", e);
             resetData();
@@ -451,7 +466,11 @@ function updateEliminationHistoryUI() {
 function renderDashboard() {
     elements.roulettesGrid.innerHTML = '';
 
-    appState.roulettes.forEach(r => {
+    const roulettesToRender = showOnlyFavorites
+        ? appState.roulettes.filter(r => r.isFavorite)
+        : appState.roulettes;
+
+    roulettesToRender.forEach(r => {
         const card = document.createElement('div');
         card.className = 'roulette-card';
 
@@ -480,6 +499,7 @@ function renderDashboard() {
             </div>
             <div class="card-actions" style="display: flex; gap: 8px; width: 100%;">
                 <button class="btn btn-primary btn-sm" style="flex: 1;" onclick="showEditor('${r.id}')">Abrir Roleta</button>
+                <button class="btn btn-outline btn-sm" style="flex-shrink: 0; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; aspect-ratio: 1/1;" title="Favoritar" onclick="toggleFavorite('${r.id}')"><i class="${r.isFavorite ? 'fa-solid' : 'fa-regular'} fa-star" style="color: ${r.isFavorite ? 'gold' : 'inherit'};"></i></button>
                 <button class="btn btn-outline btn-sm" style="flex-shrink: 0; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; aspect-ratio: 1/1;" title="Duplicar Roleta" onclick="duplicateSpecificRoulette('${r.id}')"><i class="fa-solid fa-copy" style="font-size: 1.1rem; color: var(--text-color);"></i></button>
                 <button class="btn btn-danger btn-sm" style="flex-shrink: 0; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; aspect-ratio: 1/1;" title="Excluir Roleta" onclick="deleteSpecificRoulette('${r.id}')"><i class="fa-solid fa-trash" style="font-size: 1.1rem;"></i></button>
             </div>
@@ -1219,7 +1239,28 @@ function setupEventListeners() {
     });
 
     // Dashboard
+    const tabAllRoulettes = document.getElementById('tab-all-roulettes');
+    const tabFavorites = document.getElementById('tab-favorites');
 
+    if (tabAllRoulettes && tabFavorites) {
+        tabAllRoulettes.addEventListener('click', () => {
+            showOnlyFavorites = false;
+            tabAllRoulettes.classList.add('btn-primary', 'active-mode');
+            tabAllRoulettes.classList.remove('btn-outline');
+            tabFavorites.classList.add('btn-outline');
+            tabFavorites.classList.remove('btn-primary', 'active-mode');
+            renderDashboard();
+        });
+
+        tabFavorites.addEventListener('click', () => {
+            showOnlyFavorites = true;
+            tabFavorites.classList.add('btn-primary', 'active-mode');
+            tabFavorites.classList.remove('btn-outline');
+            tabAllRoulettes.classList.add('btn-outline');
+            tabAllRoulettes.classList.remove('btn-primary', 'active-mode');
+            renderDashboard();
+        });
+    }
 
     // Editor Actions
 
@@ -1458,6 +1499,15 @@ function duplicateOption(id) {
     drawRoulette();
 }
 
+function toggleFavorite(id) {
+    const r = appState.roulettes.find(ro => ro.id === id);
+    if (r) {
+        r.isFavorite = !r.isFavorite;
+        saveData();
+        renderDashboard();
+    }
+}
+
 function duplicateSpecificRoulette(id) {
     const source = appState.roulettes.find(r => r.id === id);
     if (!source) return;
@@ -1640,6 +1690,29 @@ function createTemplateCard(tpl, isUser) {
             // CORREÇÃO DEFINITIVA: Puxa o 'bgColor' real da opção
             ctx.fillStyle = opt.bgColor || colors[idx % colors.length]; 
             ctx.fill();
+
+            if (opt.image) {
+                ctx.save();
+                ctx.clip();
+
+                let imgObj = imageCache.get(opt.image);
+                if (!imgObj) {
+                    imgObj = new Image();
+                    imgObj.src = opt.image;
+                    imageCache.set(opt.image, imgObj);
+                    imgObj.onload = () => { renderTemplateLists(); };
+                }
+
+                if (imgObj && imgObj.complete && imgObj.naturalWidth > 0) {
+                    const imgSize = r * 2;
+                    ctx.translate(cx, cy);
+                    ctx.rotate(startAngle + sliceAngle / 2);
+                    ctx.drawImage(imgObj, 0, -imgSize/2, imgSize, imgSize);
+                    ctx.rotate(-(startAngle + sliceAngle / 2));
+                    ctx.translate(-cx, -cy);
+                }
+                ctx.restore();
+            }
             
             ctx.strokeStyle = 'rgba(0,0,0,0.15)';
             ctx.lineWidth = 2; 
