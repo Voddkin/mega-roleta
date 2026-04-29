@@ -15,6 +15,7 @@
     <header class="app-header">
         <div class="header-content">
             <button id="btn-back" class="btn btn-outline" style="display: none;"><i class="fa-solid fa-arrow-left"></i> Menu</button>
+            <button id="btn-back-nested" class="btn btn-primary" style="display: none;"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
             <h1>Mega Roleta</h1>
             <div class="theme-selector">
                 <label for="theme-select">Tema:</label>
@@ -90,7 +91,10 @@
                 </div>
                 <div id="scoreboard-container" style="display: none; margin-top: 20px; width: 100%;">
                     <h4 style="margin-bottom: 10px; font-size: 0.9rem; opacity: 0.8; text-align: center;">Placar da Sessão:</h4>
-                    <div id="scoreboard-list" style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px;"></div>
+                    <div id="scoreboard-list" style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px; margin-bottom: 10px;"></div>
+                    <div style="display: flex; justify-content: center;">
+                        <button id="btn-show-analytics" class="btn btn-primary btn-sm"><i class="fa-solid fa-chart-simple"></i> Ver Analytics</button>
+                    </div>
                 </div>
             </section>
 
@@ -162,6 +166,13 @@
                             <span class="slider round"></span>
                         </label>
                         <span style="font-size: 0.85rem;">Desgaste</span>
+                    </div>
+                    <div class="advanced-toggle-container advanced-field" style="margin: 0; justify-content: flex-start; transition: all 0.3s ease;">
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-prd">
+                            <span class="slider round"></span>
+                        </label>
+                        <span style="font-size: 0.85rem;" title="Aumenta levemente a chance de opções que não foram sorteadas ainda.">Sorte Distribuída (PRD)</span>
                     </div>
                     <div class="advanced-toggle-container" style="margin: 0; justify-content: flex-start;">
                         <select id="input-spin-direction" class="input-text" style="padding: 4px; font-size: 0.85rem; width: 100%;">
@@ -256,6 +267,19 @@
             </div>
             <div id="winner-message" class="winner-message"></div>
             <button id="btn-close-modal" class="btn btn-primary">Fechar</button>
+        </div>
+    </div>
+
+    <!-- Modal de Analytics -->
+    <div id="analytics-modal" class="modal-overlay">
+        <div class="modal-content glass-panel" style="width: 90%; max-width: 650px; padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--panel-border); padding-bottom: 10px; margin-bottom: 20px;">
+                <h2 style="margin: 0; font-size: 1.5rem; display: flex; align-items: center; gap: 10px;"><i class="fa-solid fa-chart-column"></i> Analytics da Sessão</h2>
+                <button id="btn-close-analytics" class="btn btn-outline btn-sm" style="border-radius: 50%; width: 35px; height: 35px; padding: 0;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div style="width: 100%; overflow-x: auto; padding-bottom: 10px;">
+                <canvas id="analytics-canvas" width="600" height="350" style="max-width: 100%;"></canvas>
+            </div>
         </div>
     </div>
 

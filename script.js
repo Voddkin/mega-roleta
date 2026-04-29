@@ -70,6 +70,7 @@ const defaultRoulette = (name = "Minha Roleta") => ({
     isFavorite: false,
     mysteryMode: false,
     fatigueMode: false,
+    prdMode: false,
     celebrationLevel: "normal",
     spinDirection: "clockwise",
     options: [
@@ -276,6 +277,7 @@ const elements = {
     optionsCount: document.getElementById('options-count'),
     btnAddOption: document.getElementById('btn-add-option'),
     btnSpin: document.getElementById('btn-spin'),
+    togglePrd: document.getElementById('toggle-prd'),
     canvas: document.getElementById('roulette-canvas'),
     pointer: document.getElementById('pointer'),
 
@@ -287,7 +289,13 @@ const elements = {
     winnerMessage: document.getElementById('winner-message'),
     btnCloseModal: document.getElementById('btn-close-modal'),
     confettiCanvas: document.getElementById('confetti-canvas'),
-    ctx: document.getElementById('roulette-canvas').getContext('2d')
+    ctx: document.getElementById('roulette-canvas').getContext('2d'),
+
+    // Analytics
+    analyticsModal: document.getElementById('analytics-modal'),
+    analyticsCanvas: document.getElementById('analytics-canvas'),
+    btnShowAnalytics: document.getElementById('btn-show-analytics'),
+    btnCloseAnalytics: document.getElementById('btn-close-analytics')
 };
 
 // Variáveis de Animação
@@ -300,6 +308,8 @@ let eliminatedOptions = [];
 let temporaryState = null;
 let lastWinningOptionId = null;
 let spinAnimation;
+let sessionPrdWeights = {};
+let navigationStack = [];
 
 // --- INICIALIZAÇÃO ---
 async function init() {
@@ -329,6 +339,9 @@ function validateRouletteSchema(data) {
             }
             if (r.fatigueMode === undefined) {
                 r.fatigueMode = false;
+            }
+            if (r.prdMode === undefined) {
+                r.prdMode = false;
             }
             if (r.celebrationLevel === undefined) {
                 r.celebrationLevel = "normal";
@@ -391,6 +404,8 @@ function showDashboard() {
     setTimeout(() => elements.dashboardView.classList.add('active'), 10);
 
     elements.btnBack.style.display = 'none';
+    document.getElementById('btn-back-nested').style.display = 'none';
+    navigationStack = [];
 
     renderDashboard();
 }
@@ -421,6 +436,10 @@ function initPlaySession() {
     sessionOptions = JSON.parse(JSON.stringify(current.options));
     eliminatedOptions = [];
     sessionScores = {};
+    sessionPrdWeights = {};
+    sessionOptions.forEach(opt => {
+        sessionPrdWeights[opt.id] = opt.weight;
+    });
 
     updateEliminationHistoryUI();
     if (typeof updateScoreboardUI === 'function') updateScoreboardUI();
@@ -655,9 +674,11 @@ function renderEditor() {
     const toggleMystery = document.getElementById('toggle-mystery');
     const toggleFatigue = document.getElementById('toggle-fatigue');
     const selectCelebration = document.getElementById('select-celebration');
+    const togglePrd = elements.togglePrd;
 
     if (toggleMystery) toggleMystery.checked = !!current.mysteryMode;
     if (toggleFatigue) toggleFatigue.checked = !!current.fatigueMode;
+    if (togglePrd) togglePrd.checked = !!current.prdMode;
     if (selectCelebration) selectCelebration.value = current.celebrationLevel || "normal";
 
     // Trava os botões visualmente assim que a tela abre
@@ -705,6 +726,10 @@ function renderOptionsList() {
             </div>
             <div class="option-row advanced-field" style="margin-top: 5px;">
                 <input type="text" class="input-text" value="${escapeHTML(opt.message)}" data-id="${opt.id}" data-field="message" placeholder="Mensagem de Vitória..." style="padding: 6px; width: 100%; font-size: 0.85rem;">
+                <select class="input-text sub-roulette-select" data-id="${opt.id}" data-field="subRouletteId" style="padding: 6px; width: 100%; font-size: 0.85rem; margin-top: 5px;">
+                    <option value="">Sem Sub-Roleta</option>
+                    ${appState.roulettes.map(r => `<option value="${r.id}" ${opt.subRouletteId === r.id ? 'selected' : ''}>Link: ${escapeHTML(r.name)}</option>`).join('')}
+                </select>
             </div>
             <div class="option-row advanced-field" style="align-items: center; justify-content: space-between; margin-top: 5px;">
                 <label style="font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 5px; margin: 0; flex: 1; justify-content: center;" class="btn btn-outline btn-sm option-dropzone" data-id="${opt.id}">
@@ -717,12 +742,14 @@ function renderOptionsList() {
         elements.optionsList.appendChild(item);
     });
 
-    elements.optionsList.querySelectorAll('input').forEach(input => {
+    elements.optionsList.querySelectorAll('input, select').forEach(input => {
         if (input.classList.contains('option-image-input')) {
             input.addEventListener('change', (e) => handleOptionImageUpload(e, input.dataset.id));
         } else if (input.type === 'checkbox') {
             input.addEventListener('change', handleOptionCheckboxChange);
         } else if (input.type === 'color') {
+            input.addEventListener('change', handleOptionChange);
+        } else if (input.tagName === 'SELECT') {
             input.addEventListener('change', handleOptionChange);
         } else {
             input.addEventListener('input', handleOptionChange);
@@ -1060,14 +1087,65 @@ function spin() {
     elements.btnSpin.disabled = true;
     elements.btnBack.disabled = true; // Impedir voltar enquanto gira
 
+    // Lógica PRD: Pré-selecionar o vencedor e ajustar as probabilidades
+    let targetWinningOption = null;
+    let totalWeightForSelection = 0;
+
+    if (r.prdMode && !isEditing) {
+        // Assegura que opções recém adicionadas tenham peso inicial
+        activeOptions.forEach(opt => {
+            if (sessionPrdWeights[opt.id] === undefined) {
+                sessionPrdWeights[opt.id] = opt.weight;
+            }
+        });
+        totalWeightForSelection = activeOptions.reduce((sum, opt) => sum + sessionPrdWeights[opt.id], 0);
+    } else {
+        totalWeightForSelection = activeOptions.reduce((sum, opt) => sum + opt.weight, 0);
+    }
+
+    const randomArray = new Uint32Array(1);
+    window.crypto.getRandomValues(randomArray);
+    const randomFraction = randomArray[0] / (0xFFFFFFFF + 1);
+    let randomWeight = randomFraction * totalWeightForSelection;
+
+    let accumulatedWeight = 0;
+    for (let i = 0; i < activeOptions.length; i++) {
+        const opt = activeOptions[i];
+        const currentOptWeight = (r.prdMode && !isEditing) ? sessionPrdWeights[opt.id] : opt.weight;
+
+        if (randomWeight >= accumulatedWeight && randomWeight < accumulatedWeight + currentOptWeight) {
+            targetWinningOption = opt;
+            break;
+        }
+        accumulatedWeight += currentOptWeight;
+    }
+
+    if (!targetWinningOption) targetWinningOption = activeOptions[0];
+
+    // Atualiza os pesos PRD após o sorteio
+    if (r.prdMode && !isEditing) {
+        activeOptions.forEach(opt => {
+            if (opt.id === targetWinningOption.id) {
+                // Reseta o ganhador para seu peso base
+                sessionPrdWeights[opt.id] = opt.weight;
+            } else {
+                // Incrementa os perdedores (ex: aumenta o próprio peso base a cada derrota)
+                sessionPrdWeights[opt.id] += opt.weight;
+            }
+        });
+    }
+
+    // A partir de agora targetWinningOption será forçada na física
+    window.preSelectedWinner = targetWinningOption;
+
     // Configurações do giro (Física Desacoplada: Velocidade vs Duração)
     const speedLevel = r.spinSpeed || 5; 
     
     // startVelocity dita "quantas voltas ela dá" (Nível 10 = furacão, Nível 1 = tartaruga)
-    const startVelocity = (0.08 * speedLevel) + (Math.random() * 0.05);
+    let startVelocity = (0.08 * speedLevel) + (Math.random() * 0.05);
     
     // spinTimeTotal dita "quanto tempo demora até parar" 
-    const spinTimeTotal = 10500 - ((speedLevel - 1) * 550) + (Math.random() * 1500);
+    let spinTimeTotal = 10500 - ((speedLevel - 1) * 550) + (Math.random() * 1500);
     let spinTime = 0;
 
     // Antecipação
@@ -1082,6 +1160,59 @@ function spin() {
         t--;
         return c * (t * t * ((s + 1) * t + s) + 1) + b;
     }
+
+    // Calcula os limites visuais da opção alvo para garantir a parada exata
+    const visualTotalWeight = activeOptions.reduce((sum, opt) => sum + opt.weight, 0);
+    let startAccAngle = 0;
+    for (let i = 0; i < activeOptions.length; i++) {
+        if (activeOptions[i] === targetWinningOption) break;
+        startAccAngle += (activeOptions[i].weight / visualTotalWeight) * 2 * Math.PI;
+    }
+    const endAccAngle = startAccAngle + (targetWinningOption.weight / visualTotalWeight) * 2 * Math.PI;
+
+    // Pick a safe spot inside the slice
+    const margin = 0.1 * (endAccAngle - startAccAngle);
+    const sliceFraction = (randomArray[0] / (0xFFFFFFFF + 1));
+    const targetPointerAngle = startAccAngle + margin + sliceFraction * (endAccAngle - startAccAngle - 2 * margin);
+
+    const isClockwise = r.spinDirection !== 'counter-clockwise';
+    let targetFinalAngle = isClockwise ? (1.5 * Math.PI) - targetPointerAngle : targetPointerAngle - (0.5 * Math.PI);
+    while (targetFinalAngle < 0) targetFinalAngle += 2 * Math.PI;
+    while (targetFinalAngle >= 2 * Math.PI) targetFinalAngle -= 2 * Math.PI;
+
+    // Simulação do trajeto da animação para ajustar a startVelocity perfeitamente
+    let expectedTravel = 0;
+    let simulatedTime = 0;
+    while (simulatedTime < spinTimeTotal) {
+        simulatedTime += 30;
+        if (simulatedTime >= spinTimeTotal) break;
+        expectedTravel += easeOutBack(simulatedTime, startVelocity, -startVelocity, spinTimeTotal, 0.3);
+    }
+
+    let backTravel = 0;
+    for (let at = 30; at <= anticipationTimeTotal; at += 30) {
+        backTravel += anticipationVelocity * (at / anticipationTimeTotal);
+    }
+
+    const netExpectedTravel = isClockwise ? (expectedTravel - backTravel) : (expectedTravel - backTravel);
+    const currentAngleNormalized = ((currentAngle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+
+    let requiredTravel = isClockwise ? (targetFinalAngle - currentAngleNormalized) : (currentAngleNormalized - targetFinalAngle);
+    while (requiredTravel < 0) requiredTravel += 2 * Math.PI;
+
+    // Adiciona voltas completas para aproximar do expectedTravel natural
+    const rotations = Math.floor(netExpectedTravel / (2 * Math.PI));
+    requiredTravel += rotations * 2 * Math.PI;
+
+    // Se a diferença for muito grande, ajusta adicionando ou removendo uma volta
+    if (Math.abs(requiredTravel - netExpectedTravel) > Math.PI) {
+        if (requiredTravel < netExpectedTravel) requiredTravel += 2 * Math.PI;
+        else requiredTravel -= 2 * Math.PI;
+    }
+
+    const scaleTravelFactor = (requiredTravel + backTravel) / expectedTravel;
+    startVelocity *= scaleTravelFactor; // Correção milimétrica da física
+
 
     function rotateAnimation() {
         let angleChange = 0;
@@ -1156,7 +1287,12 @@ function determineWinner() {
         accumulatedAngle += sliceAngle;
     }
 
-    if (!winningOption) winningOption = activeOptions[0];
+    if (window.preSelectedWinner && !isEditing) {
+        winningOption = window.preSelectedWinner;
+        window.preSelectedWinner = null;
+    } else if (!winningOption) {
+        winningOption = activeOptions[0];
+    }
 
     showWinnerModal(winningOption);
 }
@@ -1178,9 +1314,17 @@ function showWinnerModal(option) {
     elements.modal.classList.add('show');
     elements.confettiCanvas.classList.add('show');
     startConfetti();
+
+    if (option.subRouletteId && !isEditing) {
+        setTimeout(() => {
+            if (elements.modal.classList.contains('show')) {
+                hideWinnerModal(true); // true = force navigation check
+            }
+        }, 3000);
+    }
 }
 
-function hideWinnerModal() {
+function hideWinnerModal(autoNavigated = false) {
     elements.modal.classList.remove('show');
     elements.confettiCanvas.classList.remove('show');
     stopConfetti();
@@ -1199,6 +1343,24 @@ function hideWinnerModal() {
     if (r && r.enableScoreboard && lastWinningOptionId && !isEditing) {
         sessionScores[lastWinningOptionId] = (sessionScores[lastWinningOptionId] || 0) + 1;
         if (typeof updateScoreboardUI === 'function') updateScoreboardUI();
+    }
+
+    if (lastWinningOptionId && !isEditing) {
+        const option = sessionOptions.find(o => o.id === lastWinningOptionId);
+        if (option && option.subRouletteId) {
+            const nextRoulette = appState.roulettes.find(ro => ro.id === option.subRouletteId);
+            if (nextRoulette) {
+                // Efeito de fade
+                elements.editorView.style.opacity = 0;
+                setTimeout(() => {
+                    navigationStack.push(appState.currentRouletteId);
+                    showEditor(nextRoulette.id);
+                    elements.editorView.style.opacity = 1;
+                    document.getElementById('btn-back-nested').style.display = 'inline-flex';
+                    setTimeout(spin, 800); // Gira automaticamente após transição
+                }, 400);
+            }
+        }
     }
 
     lastWinningOptionId = null;
@@ -1234,6 +1396,132 @@ function updateScoreboardUI() {
         badge.textContent = `${opt.name}: ${score}`;
         if (elements.scoreboardList) elements.scoreboardList.appendChild(badge);
     });
+}
+
+// --- DASHBOARD ANALÍTICO (CANVAS) ---
+function drawAnalyticsChart() {
+    const canvas = elements.analyticsCanvas;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const r = getCurrentRoulette();
+    if (!r) return;
+
+    // Ajusta resolução para telas retina
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    // Prevenção caso o modal esteja display:none
+    const width = rect.width || 600;
+    const height = rect.height || 350;
+
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.scale(dpr, dpr);
+
+    ctx.clearRect(0, 0, width, height);
+
+    const options = isEditing ? r.options : sessionOptions;
+    if (options.length === 0) return;
+
+    const totalWeight = options.reduce((sum, opt) => sum + opt.weight, 0);
+    const totalSpins = Object.values(sessionScores).reduce((sum, score) => sum + score, 0);
+
+    // Variáveis CSS do Tema
+    const bodyStyles = getComputedStyle(document.body);
+    const textColor = bodyStyles.getPropertyValue('--text-color').trim() || '#ffffff';
+    const textMuted = bodyStyles.getPropertyValue('--text-muted').trim() || '#888888';
+    const primaryColor = bodyStyles.getPropertyValue('--primary-color').trim() || '#6366f1';
+    const panelBorder = bodyStyles.getPropertyValue('--panel-border').trim() || 'rgba(255,255,255,0.1)';
+
+    const padding = { top: 40, right: 20, bottom: 60, left: 50 };
+    const chartWidth = width - padding.left - padding.right;
+    const chartHeight = height - padding.top - padding.bottom;
+
+    // Calcula dados
+    const data = options.map(opt => {
+        const expectedPercent = totalWeight > 0 ? (opt.weight / totalWeight) : 0;
+        const expectedCount = expectedPercent * totalSpins;
+        const actualCount = sessionScores[opt.id] || 0;
+        return { name: opt.name, expected: expectedCount, actual: actualCount, color: opt.bgColor };
+    });
+
+    const maxVal = Math.max(...data.map(d => Math.max(d.expected, d.actual)), 1);
+    // Arredonda pro próximo inteiro maior para o topo do eixo Y
+    const yMax = Math.ceil(maxVal * 1.2);
+
+    // Desenha Grid Horizontal
+    ctx.beginPath();
+    ctx.strokeStyle = panelBorder;
+    ctx.lineWidth = 1;
+    const numLines = 5;
+    for (let i = 0; i <= numLines; i++) {
+        const y = padding.top + chartHeight - (i / numLines) * chartHeight;
+        ctx.moveTo(padding.left, y);
+        ctx.lineTo(width - padding.right, y);
+
+        ctx.fillStyle = textMuted;
+        ctx.font = '12px Poppins, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        const val = ((i / numLines) * yMax).toFixed(1);
+        ctx.fillText(val, padding.left - 10, y);
+    }
+    ctx.stroke();
+
+    // Desenha Barras
+    const barSpacing = chartWidth / data.length;
+    const barWidth = Math.min(barSpacing * 0.35, 40); // Duas barras por opção
+
+    data.forEach((d, i) => {
+        const xCenter = padding.left + (i + 0.5) * barSpacing;
+
+        // Barra Esperada (Fundo/Translúcida)
+        const expectedHeight = (d.expected / yMax) * chartHeight;
+        const expectedY = padding.top + chartHeight - expectedHeight;
+        ctx.fillStyle = 'rgba(150, 150, 150, 0.3)';
+        ctx.beginPath();
+        ctx.roundRect(xCenter - barWidth - 2, expectedY, barWidth, expectedHeight, [4, 4, 0, 0]);
+        ctx.fill();
+
+        // Barra Real (Cor do Tema)
+        const actualHeight = (d.actual / yMax) * chartHeight;
+        const actualY = padding.top + chartHeight - actualHeight;
+        ctx.fillStyle = primaryColor; // Ou usar d.color
+        ctx.beginPath();
+        ctx.roundRect(xCenter + 2, actualY, barWidth, actualHeight, [4, 4, 0, 0]);
+        ctx.fill();
+
+        // Nome da Opção (Eixo X)
+        ctx.save();
+        ctx.translate(xCenter, padding.top + chartHeight + 15);
+        ctx.rotate(-Math.PI / 4);
+        ctx.fillStyle = textColor;
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.font = '12px Poppins, sans-serif';
+
+        let label = d.name;
+        if (label.length > 12) label = label.substring(0, 10) + '...';
+        ctx.fillText(label, 0, 0);
+        ctx.restore();
+    });
+
+    // Legenda
+    ctx.fillStyle = textColor;
+    ctx.font = '12px Poppins, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+
+    // Legenda: Esperado
+    ctx.fillStyle = 'rgba(150, 150, 150, 0.3)';
+    ctx.fillRect(padding.left, 10, 15, 15);
+    ctx.fillStyle = textMuted;
+    ctx.fillText("Frequência Esperada", padding.left + 20, 10);
+
+    // Legenda: Real
+    ctx.fillStyle = primaryColor;
+    ctx.fillRect(padding.left + 160, 10, 15, 15);
+    ctx.fillStyle = textMuted;
+    ctx.fillText("Frequência Real", padding.left + 180, 10);
 }
 
 // --- EVENT LISTENERS ---
@@ -1334,6 +1622,11 @@ function setupEventListeners() {
         if(r) { r.fatigueMode = e.target.checked; saveData(); }
     });
 
+    elements.togglePrd?.addEventListener('change', (e) => {
+        const r = getCurrentRoulette();
+        if(r) { r.prdMode = e.target.checked; saveData(); }
+    });
+
     const selectCelebration = document.getElementById('select-celebration');
     selectCelebration?.addEventListener('change', (e) => {
         const r = getCurrentRoulette();
@@ -1383,6 +1676,23 @@ function setupEventListeners() {
     elements.btnBack.addEventListener('click', () => {
         if(!isSpinning) showDashboard();
     });
+
+    const btnBackNested = document.getElementById('btn-back-nested');
+    if (btnBackNested) {
+        btnBackNested.addEventListener('click', () => {
+            if (!isSpinning && navigationStack.length > 0) {
+                const prevId = navigationStack.pop();
+                elements.editorView.style.opacity = 0;
+                setTimeout(() => {
+                    showEditor(prevId);
+                    elements.editorView.style.opacity = 1;
+                    if (navigationStack.length === 0) {
+                        btnBackNested.style.display = 'none';
+                    }
+                }, 400);
+            }
+        });
+    }
 
     // Dashboard
     const tabAllRoulettes = document.getElementById('tab-all-roulettes');
@@ -1444,8 +1754,18 @@ function setupEventListeners() {
     elements.btnSpin.addEventListener('click', spin);
     elements.btnCloseModal.addEventListener('click', hideWinnerModal);
 
+    elements.btnShowAnalytics?.addEventListener('click', () => {
+        elements.analyticsModal.classList.add('show');
+        if (typeof drawAnalyticsChart === 'function') drawAnalyticsChart();
+    });
+
+    elements.btnCloseAnalytics?.addEventListener('click', () => {
+        elements.analyticsModal.classList.remove('show');
+    });
+
     window.addEventListener('click', (e) => {
         if (e.target === elements.modal) hideWinnerModal();
+        if (e.target === elements.analyticsModal) elements.analyticsModal.classList.remove('show');
     });
 }
 
