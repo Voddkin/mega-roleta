@@ -58,11 +58,13 @@
 
         <!-- Visão 1: Menu de Roletas (Dashboard) -->
         <section id="dashboard-view" class="view-section active">
-            <div class="dashboard-header">
-                <h2>Minhas Roletas</h2>
-                <div class="dashboard-tabs" style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button id="tab-all-roulettes" class="btn btn-primary btn-sm active-mode">Todas as Roletas</button>
-                    <button id="tab-favorites" class="btn btn-outline btn-sm"><i class="fa-solid fa-star"></i> Favoritas</button>
+            <div id="dashboard-tabs-container" class="dashboard-tabs-container">
+                <div id="dashboard-tabs-list" class="dashboard-tabs-list">
+                    <!-- Abas geradas via JS -->
+                </div>
+                <div class="dashboard-tabs-actions">
+                    <button id="btn-add-category" class="btn btn-outline btn-sm" title="Nova Categoria"><i class="fa-solid fa-plus"></i></button>
+                    <button id="btn-manage-categories" class="btn btn-outline btn-sm" title="Gerenciar Categorias"><i class="fa-solid fa-gear"></i></button>
                 </div>
             </div>
             <div id="roulettes-grid" class="roulettes-grid">
@@ -279,6 +281,45 @@
             </div>
             <div style="width: 100%; overflow-x: auto; padding-bottom: 10px;">
                 <canvas id="analytics-canvas" width="600" height="350" style="max-width: 100%;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Criar Categoria -->
+    <div id="create-category-modal" class="modal-overlay">
+        <div class="modal-content glass-panel" style="width: 90%; max-width: 400px; padding: 20px;">
+            <h2 style="font-size: 1.3rem; margin-bottom: 15px;">Nova Categoria</h2>
+            <input type="text" id="input-category-name" class="input-text" placeholder="Nome da Categoria..." style="width: 100%; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button id="btn-cancel-category" class="btn btn-outline">Cancelar</button>
+                <button id="btn-confirm-category" class="btn btn-primary">Criar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Gerenciar Categorias -->
+    <div id="manage-categories-modal" class="modal-overlay">
+        <div class="modal-content glass-panel" style="width: 90%; max-width: 500px; padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--panel-border); padding-bottom: 10px; margin-bottom: 15px;">
+                <h2 style="margin: 0; font-size: 1.3rem;">Gerenciar Categorias</h2>
+                <button id="btn-close-manage-categories" class="btn btn-outline btn-sm" style="border-radius: 50%; width: 35px; height: 35px; padding: 0;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="manage-categories-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto; padding-right: 5px;">
+                <!-- Lista de categorias preenchida via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Atribuir Categorias -->
+    <div id="assign-category-modal" class="modal-overlay">
+        <div class="modal-content glass-panel" style="width: 90%; max-width: 400px; padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--panel-border); padding-bottom: 10px; margin-bottom: 15px;">
+                <h2 style="margin: 0; font-size: 1.3rem;">Mover para Pastas</h2>
+                <button id="btn-close-assign-category" class="btn btn-outline btn-sm" style="border-radius: 50%; width: 35px; height: 35px; padding: 0;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <input type="hidden" id="assign-category-roulette-id">
+            <div id="assign-category-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 250px; overflow-y: auto; text-align: left; padding: 10px 0;">
+                <!-- Checkboxes preenchidos via JS -->
             </div>
         </div>
     </div>
