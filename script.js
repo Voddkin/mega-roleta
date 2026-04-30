@@ -55,7 +55,9 @@ let appState = {
     theme: 'dark',
     currentRouletteId: null,
     roulettes: [],
-    userTemplates: []
+    userTemplates: [],
+    categories: [],
+    activeCategoryId: 'all'
 };
 
 let showOnlyFavorites = false;
@@ -67,7 +69,7 @@ const defaultRoulette = (name = "Minha Roleta") => ({
     pointerColor: "#ff0000",
     spinSpeed: 5,
     enableScoreboard: false,
-    isFavorite: false,
+    categoryIds: ['all'],
     mysteryMode: false,
     fatigueMode: false,
     prdMode: false,
@@ -240,6 +242,20 @@ const elements = {
     // Dashboard Elements
     roulettesGrid: document.getElementById('roulettes-grid'),
     btnNewRouletteDash: document.getElementById('btn-new-roulette'), // Usando o id do HTML
+    dashboardTabsList: document.getElementById('dashboard-tabs-list'),
+    btnAddCategory: document.getElementById('btn-add-category'),
+    btnManageCategories: document.getElementById('btn-manage-categories'),
+    createCategoryModal: document.getElementById('create-category-modal'),
+    inputCategoryName: document.getElementById('input-category-name'),
+    btnCancelCategory: document.getElementById('btn-cancel-category'),
+    btnConfirmCategory: document.getElementById('btn-confirm-category'),
+    manageCategoriesModal: document.getElementById('manage-categories-modal'),
+    manageCategoriesList: document.getElementById('manage-categories-list'),
+    btnCloseManageCategories: document.getElementById('btn-close-manage-categories'),
+    assignCategoryModal: document.getElementById('assign-category-modal'),
+    assignCategoryList: document.getElementById('assign-category-list'),
+    btnCloseAssignCategory: document.getElementById('btn-close-assign-category'),
+    assignCategoryRouletteId: document.getElementById('assign-category-roulette-id'),
 
     // Editor Elements
     currentRouletteTitle: document.getElementById('current-roulette-title'),
@@ -329,11 +345,29 @@ async function init() {
 }
 
 function validateRouletteSchema(data) {
+    // Inicializar categorias se não existirem
+    if (!data.categories || !Array.isArray(data.categories) || data.categories.length === 0) {
+        data.categories = [
+            { id: 'all', name: 'Todas', order: 0, rouletteOrder: [] },
+            { id: 'favorites', name: 'Favoritas', order: 1, rouletteOrder: [] }
+        ];
+    }
+
+    if (!data.activeCategoryId) {
+        data.activeCategoryId = 'all';
+    }
+
     if (data && data.roulettes && Array.isArray(data.roulettes)) {
         data.roulettes.forEach(r => {
-            if (r.isFavorite === undefined) {
-                r.isFavorite = false;
+            // Migração de isFavorite para categoryIds
+            if (!r.categoryIds || !Array.isArray(r.categoryIds)) {
+                r.categoryIds = ['all'];
+                if (r.isFavorite === true) {
+                    r.categoryIds.push('favorites');
+                }
             }
+            delete r.isFavorite; // Remove a propriedade antiga
+
             if (r.mysteryMode === undefined) {
                 r.mysteryMode = false;
             }
@@ -407,7 +441,188 @@ function showDashboard() {
     document.getElementById('btn-back-nested').style.display = 'none';
     navigationStack = [];
 
+    renderTabs();
     renderDashboard();
+}
+
+function renderManageCategories() {
+    if (!elements.manageCategoriesList) return;
+    elements.manageCategoriesList.innerHTML = '';
+
+    const customCats = appState.categories.filter(c => c.id !== 'all' && c.id !== 'favorites');
+
+    if (customCats.length === 0) {
+        elements.manageCategoriesList.innerHTML = '<div style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 10px;">Nenhuma categoria customizada.</div>';
+        return;
+    }
+
+    customCats.sort((a, b) => a.order - b.order).forEach(cat => {
+        const item = document.createElement('div');
+        item.className = 'category-manage-item';
+
+        item.innerHTML = `
+            <i class="fa-solid fa-folder" style="color: var(--primary-color);"></i>
+            <input type="text" value="${escapeHTML(cat.name)}" title="Editar nome">
+            <button class="btn btn-danger btn-sm" title="Excluir Categoria" style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><i class="fa-solid fa-trash"></i></button>
+        `;
+
+        const input = item.querySelector('input');
+        input.addEventListener('change', (e) => {
+            const newName = e.target.value.trim();
+            if (newName) {
+                cat.name = newName;
+                saveData();
+                renderTabs();
+            } else {
+                e.target.value = cat.name;
+            }
+        });
+
+        const btnDelete = item.querySelector('.btn-danger');
+        btnDelete.addEventListener('click', () => {
+            if(confirm(`Excluir a categoria "${cat.name}"? As roletas não serão excluídas.`)) {
+                // Remove a categoria
+                appState.categories = appState.categories.filter(c => c.id !== cat.id);
+                // Remove o vinculo das roletas
+                appState.roulettes.forEach(r => {
+                    if (r.categoryIds && r.categoryIds.includes(cat.id)) {
+                        r.categoryIds = r.categoryIds.filter(cid => cid !== cat.id);
+                    }
+                });
+                // Se a categoria excluída estava ativa, reseta para 'all'
+                if (appState.activeCategoryId === cat.id) {
+                    appState.activeCategoryId = 'all';
+                    renderDashboard();
+                }
+                saveData();
+                renderTabs();
+                renderManageCategories();
+            }
+        });
+
+        elements.manageCategoriesList.appendChild(item);
+    });
+}
+
+function openAssignCategoryModal(rouletteId) {
+    const r = appState.roulettes.find(ro => ro.id === rouletteId);
+    if (!r) return;
+
+    elements.assignCategoryRouletteId.value = rouletteId;
+    elements.assignCategoryList.innerHTML = '';
+
+    const customCats = appState.categories.filter(c => c.id !== 'all' && c.id !== 'favorites');
+
+    if (customCats.length === 0) {
+        elements.assignCategoryList.innerHTML = '<div style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 10px;">Crie categorias primeiro usando o botão +.</div>';
+    } else {
+        customCats.sort((a, b) => a.order - b.order).forEach(cat => {
+            const isChecked = r.categoryIds && r.categoryIds.includes(cat.id);
+
+            const item = document.createElement('label');
+            item.className = 'category-assign-item';
+
+            item.innerHTML = `
+                <input type="checkbox" ${isChecked ? 'checked' : ''}>
+                <span style="font-size: 0.9rem; font-weight: 500; color: var(--text-color);">${escapeHTML(cat.name)}</span>
+            `;
+
+            const checkbox = item.querySelector('input');
+            checkbox.addEventListener('change', (e) => {
+                if (!r.categoryIds) r.categoryIds = ['all'];
+                if (e.target.checked) {
+                    if (!r.categoryIds.includes(cat.id)) r.categoryIds.push(cat.id);
+                    // Automaticamente adiciona a nova roleta ao final da ordem se nao existir
+                    const category = appState.categories.find(c => c.id === cat.id);
+                    if (category && !category.rouletteOrder) category.rouletteOrder = [];
+                    if (category && !category.rouletteOrder.includes(r.id)) category.rouletteOrder.push(r.id);
+                } else {
+                    r.categoryIds = r.categoryIds.filter(cid => cid !== cat.id);
+                }
+                saveData();
+                renderDashboard(); // Atualiza em tempo real a grid se a gente desmarcar a aba atual
+            });
+
+            elements.assignCategoryList.appendChild(item);
+        });
+    }
+
+    elements.assignCategoryModal.classList.add('show');
+}
+
+function renderTabs() {
+    if (!elements.dashboardTabsList) return;
+
+    // Garantir que as categorias estejam ordenadas
+    const sortedCategories = [...appState.categories].sort((a, b) => a.order - b.order);
+
+    elements.dashboardTabsList.innerHTML = '';
+
+    sortedCategories.forEach(cat => {
+        const tab = document.createElement('div');
+        const isSystem = (cat.id === 'all' || cat.id === 'favorites');
+
+        tab.className = `category-tab ${isSystem ? 'system-tab' : ''} ${appState.activeCategoryId === cat.id ? 'active' : ''}`;
+        tab.setAttribute('data-id', cat.id);
+
+        let iconHtml = '';
+        if (cat.id === 'favorites') iconHtml = '<i class="fa-solid fa-star"></i> ';
+
+        tab.innerHTML = `${iconHtml}${escapeHTML(cat.name)}`;
+
+        tab.addEventListener('click', () => {
+            if (appState.activeCategoryId !== cat.id) {
+                appState.activeCategoryId = cat.id;
+
+                // Animação de transição suave no grid
+                elements.roulettesGrid.style.opacity = '0';
+                elements.roulettesGrid.style.transform = 'translateY(10px)';
+                elements.roulettesGrid.style.transition = 'all 0.3s ease';
+
+                // Atualizar classes visuais das tabs imediatamente
+                document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                setTimeout(() => {
+                    renderDashboard();
+                    elements.roulettesGrid.style.opacity = '1';
+                    elements.roulettesGrid.style.transform = 'translateY(0)';
+                }, 300);
+            }
+        });
+
+        elements.dashboardTabsList.appendChild(tab);
+    });
+
+    // SortableJS para Tabs
+    if (window.Sortable && elements.dashboardTabsList) {
+        if (elements.dashboardTabsList._sortable) {
+            elements.dashboardTabsList._sortable.destroy();
+        }
+        elements.dashboardTabsList._sortable = Sortable.create(elements.dashboardTabsList, {
+            animation: 150,
+            filter: '.system-tab', // Previne arrastar abas de sistema
+            onMove: function(evt) {
+                // Impede soltar ANTES de uma aba de sistema
+                return !evt.related.classList.contains('system-tab');
+            },
+            onEnd: function() {
+                // Lendo a nova ordem do DOM e atualizando o appState.categories
+                const tabElements = Array.from(elements.dashboardTabsList.querySelectorAll('.category-tab'));
+
+                // Mapeia o ID -> index
+                tabElements.forEach((el, index) => {
+                    const id = el.getAttribute('data-id');
+                    const cat = appState.categories.find(c => c.id === id);
+                    if (cat) cat.order = index;
+                });
+
+                // Salvar a nova ordem
+                saveData();
+                renderTabs(); // Re-render para limpar estado do sortable visualmente perfeito
+            }
+        });
+    }
 }
 
 function showEditor(rouletteId) {
@@ -505,13 +720,30 @@ function updateEliminationHistoryUI() {
 function renderDashboard() {
     elements.roulettesGrid.innerHTML = '';
 
-    const roulettesToRender = showOnlyFavorites
-        ? appState.roulettes.filter(r => r.isFavorite)
-        : appState.roulettes;
+    const activeCategoryId = appState.activeCategoryId || 'all';
+
+    // Filtra as roletas baseada na aba ativa
+    let roulettesToRender = appState.roulettes.filter(r =>
+        r.categoryIds && r.categoryIds.includes(activeCategoryId)
+    );
+
+    // Ordena baseada na ordem salva na categoria ativa
+    const activeCategory = appState.categories.find(c => c.id === activeCategoryId);
+    if (activeCategory && activeCategory.rouletteOrder) {
+        roulettesToRender.sort((a, b) => {
+            const indexA = activeCategory.rouletteOrder.indexOf(a.id);
+            const indexB = activeCategory.rouletteOrder.indexOf(b.id);
+            if (indexA === -1 && indexB === -1) return 0;
+            if (indexA === -1) return 1; // Itens novos ou sem ordem vão pro final
+            if (indexB === -1) return -1;
+            return indexA - indexB;
+        });
+    }
 
     roulettesToRender.forEach(r => {
         const card = document.createElement('div');
         card.className = 'roulette-card';
+        card.setAttribute('data-id', r.id);
 
         // Criar um canvas miniatura
         const canvasId = `thumb-${r.id}`;
@@ -538,7 +770,8 @@ function renderDashboard() {
             </div>
             <div class="card-actions" style="display: flex; gap: 8px; width: 100%;">
                 <button class="btn btn-primary btn-sm" style="flex: 1;" onclick="showEditor('${r.id}')">Abrir Roleta</button>
-                <button class="btn btn-outline btn-sm" style="flex-shrink: 0; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; aspect-ratio: 1/1;" title="Favoritar" onclick="toggleFavorite('${r.id}')"><i class="${r.isFavorite ? 'fa-solid' : 'fa-regular'} fa-star" style="color: ${r.isFavorite ? 'gold' : 'inherit'};"></i></button>
+                <button class="btn btn-outline btn-sm" style="flex-shrink: 0; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; aspect-ratio: 1/1;" title="Categorias" onclick="openAssignCategoryModal('${r.id}')"><i class="fa-solid fa-folder"></i></button>
+                <button class="btn btn-outline btn-sm" style="flex-shrink: 0; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; aspect-ratio: 1/1;" title="Favoritar" onclick="toggleFavorite('${r.id}')"><i class="${r.categoryIds && r.categoryIds.includes('favorites') ? 'fa-solid' : 'fa-regular'} fa-star" style="color: ${r.categoryIds && r.categoryIds.includes('favorites') ? 'gold' : 'inherit'};"></i></button>
                 <button class="btn btn-outline btn-sm" style="flex-shrink: 0; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; aspect-ratio: 1/1;" title="Duplicar Roleta" onclick="duplicateSpecificRoulette('${r.id}')"><i class="fa-solid fa-copy" style="font-size: 1.1rem; color: var(--text-color);"></i></button>
                 <button class="btn btn-danger btn-sm" style="flex-shrink: 0; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; aspect-ratio: 1/1;" title="Excluir Roleta" onclick="deleteSpecificRoulette('${r.id}')"><i class="fa-solid fa-trash" style="font-size: 1.1rem;"></i></button>
             </div>
@@ -577,6 +810,30 @@ function renderDashboard() {
             if(r) { r.profileImage = null; saveData(); renderDashboard(); }
         });
     });
+
+    // SortableJS para Grid
+    if (window.Sortable && elements.roulettesGrid) {
+        if (elements.roulettesGrid._sortable) {
+            elements.roulettesGrid._sortable.destroy();
+        }
+        elements.roulettesGrid._sortable = Sortable.create(elements.roulettesGrid, {
+            animation: 150,
+            filter: '.ghost-card', // Não arrasta o card de criar nova roleta
+            onMove: function(evt) {
+                return !evt.related.classList.contains('ghost-card');
+            },
+            onEnd: function() {
+                const cardElements = Array.from(elements.roulettesGrid.querySelectorAll('.roulette-card:not(.ghost-card)'));
+                const newOrder = cardElements.map(el => el.getAttribute('data-id'));
+
+                const activeCategory = appState.categories.find(c => c.id === (appState.activeCategoryId || 'all'));
+                if (activeCategory) {
+                    activeCategory.rouletteOrder = newOrder;
+                    saveData();
+                }
+            }
+        });
+    }
 }
 
 function drawMiniature(canvasId, r) {
@@ -1754,6 +2011,40 @@ function setupEventListeners() {
     elements.btnSpin.addEventListener('click', spin);
     elements.btnCloseModal.addEventListener('click', hideWinnerModal);
 
+    elements.btnAddCategory?.addEventListener('click', () => {
+        elements.createCategoryModal.classList.add('show');
+        elements.inputCategoryName.value = '';
+        setTimeout(() => elements.inputCategoryName.focus(), 100);
+    });
+
+    elements.btnCancelCategory?.addEventListener('click', () => {
+        elements.createCategoryModal.classList.remove('show');
+    });
+
+    elements.btnConfirmCategory?.addEventListener('click', () => {
+        const name = elements.inputCategoryName.value.trim();
+        if (name) {
+            const id = 'cat_' + Date.now();
+            appState.categories.push({ id, name, order: appState.categories.length, rouletteOrder: [] });
+            saveData();
+            renderTabs();
+            elements.createCategoryModal.classList.remove('show');
+        }
+    });
+
+    elements.btnManageCategories?.addEventListener('click', () => {
+        renderManageCategories();
+        elements.manageCategoriesModal.classList.add('show');
+    });
+
+    elements.btnCloseManageCategories?.addEventListener('click', () => {
+        elements.manageCategoriesModal.classList.remove('show');
+    });
+
+    elements.btnCloseAssignCategory?.addEventListener('click', () => {
+        elements.assignCategoryModal.classList.remove('show');
+    });
+
     elements.btnShowAnalytics?.addEventListener('click', () => {
         elements.analyticsModal.classList.add('show');
         if (typeof drawAnalyticsChart === 'function') drawAnalyticsChart();
@@ -1968,7 +2259,13 @@ function duplicateOption(id) {
 function toggleFavorite(id) {
     const r = appState.roulettes.find(ro => ro.id === id);
     if (r) {
-        r.isFavorite = !r.isFavorite;
+        if (!r.categoryIds) r.categoryIds = ['all'];
+        const favIndex = r.categoryIds.indexOf('favorites');
+        if (favIndex === -1) {
+            r.categoryIds.push('favorites');
+        } else {
+            r.categoryIds.splice(favIndex, 1);
+        }
         saveData();
         renderDashboard();
     }

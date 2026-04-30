@@ -5,103 +5,41 @@ def run_cuj(page):
     page.goto("http://localhost:8080")
     page.wait_for_timeout(1000)
 
-    # 1. Open roulette
-    page.get_by_role("button", name="Abrir Roleta").first.click()
+    # 1. Add new category
+    page.locator("#btn-add-category").click()
+    page.wait_for_timeout(1000)
+    page.locator("#input-category-name").fill("Trabalho")
+    page.wait_for_timeout(1000)
+    page.locator("#btn-confirm-category").click()
     page.wait_for_timeout(1000)
 
-    # Click EDIT
-    page.locator("button[title='Editar Roleta']").click()
+    # 2. Add roulette to category
+    page.locator("button[title='Categorias']").first.click()
+    page.wait_for_timeout(1000)
+    # Check the first custom category (which should be "Trabalho")
+    page.locator(".category-assign-item input[type='checkbox']").first.check()
+    page.wait_for_timeout(1000)
+    page.locator("#btn-close-assign-category").click()
     page.wait_for_timeout(1000)
 
-    # Just force advanced mode to show everything
-    page.evaluate("document.body.classList.add('show-advanced')")
+    # 3. Switch to category tab
+    page.locator("#dashboard-tabs-list").get_by_text("Trabalho").click()
     page.wait_for_timeout(1000)
 
-    # Toggle PRD
-    page.evaluate("document.getElementById('toggle-prd').click()")
+    # Take screenshot of Dashboard with Category Tab active
+    page.screenshot(path="/home/jules/verification/screenshots/category_tab.png")
     page.wait_for_timeout(1000)
 
-    # Enable scoreboard
-    page.evaluate("document.getElementById('toggle-scoreboard').click()")
+    # 4. Open Manage Categories
+    page.locator("#btn-manage-categories").click()
     page.wait_for_timeout(1000)
 
-    # Save
-    page.get_by_role("button", name="Salvar").click()
+    # Take screenshot of Manage Categories Modal
+    page.screenshot(path="/home/jules/verification/screenshots/manage_categories.png")
     page.wait_for_timeout(1000)
 
-    # 2. Spin roulette
-    page.get_by_role("button", name="GIRAR A ROLETA").click()
-
-    # Wait for spin to finish (spin time max ~12s)
-    page.wait_for_timeout(14000)
-
-    # Close winner modal
-    page.get_by_role("button", name="Fechar").click()
+    page.locator("#btn-close-manage-categories").click()
     page.wait_for_timeout(1000)
-
-    # Scroll to scoreboard
-    page.evaluate("document.querySelector('#btn-show-analytics').scrollIntoView()")
-    page.wait_for_timeout(500)
-
-    # 3. View Analytics
-    page.get_by_text("Ver Analytics").click()
-    page.wait_for_timeout(2000)
-
-    # Take screenshot of Analytics Modal
-    page.screenshot(path="/home/jules/verification/screenshots/analytics.png")
-    page.wait_for_timeout(1000)
-
-    # Close Analytics Modal
-    page.locator("#btn-close-analytics").click()
-    page.wait_for_timeout(1000)
-
-    # 4. Configure Sub-Roulette
-    page.locator("button[title='Editar Roleta']").click()
-    page.wait_for_timeout(1000)
-
-    # Force show advanced again if it toggled off
-    page.evaluate("document.body.classList.add('show-advanced')")
-    page.wait_for_timeout(500)
-
-    # Select first option's sub-roulette
-    page.evaluate("document.querySelector('.sub-roulette-select').scrollIntoView()")
-    page.wait_for_timeout(500)
-
-    page.locator(".sub-roulette-select").first.select_option(index=1)
-    page.wait_for_timeout(1000)
-
-    # Force that option to win by giving it weight 100 and others 1
-    page.locator("input[data-field='weight']").first.fill("100")
-    page.wait_for_timeout(1000)
-
-    page.get_by_role("button", name="Salvar").click()
-    page.wait_for_timeout(1000)
-
-    # Spin to trigger nested
-    page.evaluate("document.querySelector('.canvas-container').scrollIntoView()")
-    page.wait_for_timeout(500)
-
-    page.get_by_role("button", name="GIRAR A ROLETA").click()
-
-    page.wait_for_timeout(15000)
-    # The modal should auto close and spin the sub-roulette
-
-    # Wait for transition and sub-roulette spin
-    page.wait_for_timeout(15000)
-
-    # Close sub-roulette winner modal
-    page.get_by_role("button", name="Fechar").click()
-    page.wait_for_timeout(1000)
-
-    # Take screenshot of sub-roulette view showing 'Voltar' button
-    page.screenshot(path="/home/jules/verification/screenshots/nested.png")
-    page.wait_for_timeout(1000)
-
-    # Click Voltar (force=True since btn-back intercepts pointer events?)
-    # btn-back-nested is positioned relative, btn-back is absolute. btn-back might be hiding it. Let's just evaluate click.
-    page.evaluate("document.getElementById('btn-back-nested').click()")
-    page.wait_for_timeout(1000)
-
 
 if __name__ == "__main__":
     os.makedirs("/home/jules/verification/videos", exist_ok=True)
