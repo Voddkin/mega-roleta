@@ -478,6 +478,9 @@ h1 {
     font-size: 0.9rem;
     cursor: pointer;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
     transition: all var(--transition-speed) ease;
     display: flex;
     align-items: center;
@@ -507,7 +510,8 @@ h1 {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px;
+    padding: 15px;
+    margin-bottom: 10px;
     background: var(--input-bg);
     border: 1px solid var(--panel-border);
     border-radius: var(--border-radius-sm);
@@ -519,9 +523,9 @@ h1 {
     background: transparent;
     border: none;
     color: var(--text-color);
-    font-size: 0.95rem;
+    font-size: 1.1rem;
     font-weight: 500;
-    padding: 5px;
+    padding: 10px;
     box-shadow: none;
 }
 

@@ -115,7 +115,7 @@
 
                 <div class="config-group">
                     <label>Nome da Roleta:</label>
-                    <input type="text" id="input-roulette-name" class="input-text">
+                    <input type="text" id="input-roulette-name" class="input-text" maxlength="40">
                 </div>
 
                 <div style="display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: center; margin-bottom: 1.5rem; background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--input-border);">
@@ -225,7 +225,7 @@
             <!-- Formulário Blank -->
             <div id="create-blank-area">
                 <label style="font-size: 0.9rem; font-weight: 500;">Nome da Roleta</label>
-                <input type="text" id="create-roulette-name" class="input-text" placeholder="Ex: Minha Nova Roleta..." style="width: 100%; padding: 12px; margin-top: 5px; font-size: 1rem; border-radius: 8px;">
+                <input type="text" id="create-roulette-name" class="input-text" placeholder="Ex: Minha Nova Roleta..." maxlength="40" style="width: 100%; padding: 12px; margin-top: 5px; font-size: 1rem; border-radius: 8px;">
             </div>
 
             <!-- Templates Area (Hidden default) -->
@@ -289,7 +289,7 @@
     <div id="create-category-modal" class="modal-overlay">
         <div class="modal-content glass-panel" style="width: 90%; max-width: 400px; padding: 20px;">
             <h2 style="font-size: 1.3rem; margin-bottom: 15px;">Nova Categoria</h2>
-            <input type="text" id="input-category-name" class="input-text" placeholder="Nome da Categoria..." style="width: 100%; margin-bottom: 20px;">
+            <input type="text" id="input-category-name" class="input-text" placeholder="Nome da Categoria..." maxlength="40" style="width: 100%; margin-bottom: 20px;">
             <div style="display: flex; justify-content: flex-end; gap: 10px;">
                 <button id="btn-cancel-category" class="btn btn-outline">Cancelar</button>
                 <button id="btn-confirm-category" class="btn btn-primary">Criar</button>

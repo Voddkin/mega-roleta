@@ -462,23 +462,48 @@ function renderManageCategories() {
 
         item.innerHTML = `
             <i class="fa-solid fa-folder" style="color: var(--primary-color);"></i>
-            <input type="text" value="${escapeHTML(cat.name)}" title="Editar nome">
-            <button class="btn btn-danger btn-sm" title="Excluir Categoria" style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><i class="fa-solid fa-trash"></i></button>
+            <input type="text" value="${escapeHTML(cat.name)}" title="Editar nome" maxlength="40" disabled>
+            <div style="display: flex; gap: 5px;">
+                <button class="btn btn-primary btn-sm btn-edit-cat" title="Editar Categoria" style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn btn-danger btn-sm btn-delete-cat" title="Excluir Categoria" style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><i class="fa-solid fa-trash"></i></button>
+            </div>
         `;
 
         const input = item.querySelector('input');
-        input.addEventListener('change', (e) => {
-            const newName = e.target.value.trim();
-            if (newName) {
-                cat.name = newName;
-                saveData();
-                renderTabs();
+        const btnEdit = item.querySelector('.btn-edit-cat');
+
+        btnEdit.addEventListener('click', () => {
+            if (input.disabled) {
+                // Habilitar edição
+                input.disabled = false;
+                input.focus();
+
+                // Mudar para botão "Salvar"
+                btnEdit.classList.remove('btn-primary');
+                btnEdit.classList.add('btn-success');
+                btnEdit.innerHTML = '<i class="fa-solid fa-check"></i>';
+                btnEdit.title = "Salvar Categoria";
             } else {
-                e.target.value = cat.name;
+                // Salvar
+                const newName = input.value.trim();
+                if (newName) {
+                    cat.name = newName;
+                    saveData();
+                    renderTabs();
+                } else {
+                    input.value = cat.name; // Reverte se estiver vazio
+                }
+
+                // Desabilitar e voltar ao estado "Editar"
+                input.disabled = true;
+                btnEdit.classList.remove('btn-success');
+                btnEdit.classList.add('btn-primary');
+                btnEdit.innerHTML = '<i class="fa-solid fa-pen"></i>';
+                btnEdit.title = "Editar Categoria";
             }
         });
 
-        const btnDelete = item.querySelector('.btn-danger');
+        const btnDelete = item.querySelector('.btn-delete-cat');
         btnDelete.addEventListener('click', () => {
             if(confirm(`Excluir a categoria "${cat.name}"? As roletas não serão excluídas.`)) {
                 // Remove a categoria
@@ -962,7 +987,7 @@ function renderOptionsList() {
             </div>
             <div class="option-row" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: nowrap; gap: 8px; width: 100%;">
                 ${thumbHTML}
-                <input type="text" class="input-text" value="${escapeHTML(opt.name)}" data-id="${opt.id}" data-field="name" placeholder="Nome" title="${escapeHTML(opt.name)}" style="padding: 8px; flex: 1; min-width: 0;">
+                <input type="text" class="input-text" value="${escapeHTML(opt.name)}" data-id="${opt.id}" data-field="name" placeholder="Nome" title="${escapeHTML(opt.name)}" maxlength="40" style="padding: 8px; flex: 1; min-width: 0;">
 
                 <div style="display: flex; gap: 4px; align-items: center; flex-shrink: 0;">
                     <input type="color" value="${escapeHTML(opt.bgColor)}" data-id="${opt.id}" data-field="bgColor" title="Fundo" style="width: 30px; height: 30px; padding: 0; border: none; border-radius: 50%; cursor: pointer; flex-shrink: 0; overflow: hidden; appearance: none; -webkit-appearance: none;">
@@ -1250,14 +1275,66 @@ function drawRoulette() {
             let text = opt.name;
             let fontSize = 24;
             ctx.font = `bold ${fontSize}px Poppins, sans-serif`;
+
+            // Text Wrapping Logic
+            let lines = [text];
             let textWidth = ctx.measureText(text).width;
-            while ((textWidth > radius * 0.7 || fontSize > (sliceAngle * radius) * 0.4) && fontSize > 10) {
+
+            // First, see if we can maintain a larger font by splitting into two lines
+            // Only split if the text is too wide and there's a space to split on
+            if (textWidth > radius * 0.75 && text.includes(' ')) {
+                const words = text.split(' ');
+                const mid = Math.ceil(words.length / 2);
+                const line1 = words.slice(0, mid).join(' ');
+                const line2 = words.slice(mid).join(' ');
+
+                // Only use two lines if both fit reasonably well
+                const width1 = ctx.measureText(line1).width;
+                const width2 = ctx.measureText(line2).width;
+
+                if (Math.max(width1, width2) < textWidth) {
+                     lines = [line1, line2];
+                }
+            }
+
+            // Now reduce font size if the widest line still doesn't fit
+            let maxLineWidth = Math.max(...lines.map(l => ctx.measureText(l).width));
+
+            // Determine maximum allowed height based on slice angle
+            // At the outer edge (radius), the arc length is sliceAngle * radius
+            const maxHeight = (sliceAngle * radius) * 0.8; // 80% of available height
+
+            while (
+                (maxLineWidth > radius * 0.75 || (fontSize * lines.length * 1.2) > maxHeight)
+                && fontSize > 10
+            ) {
                 fontSize--;
                 ctx.font = `bold ${fontSize}px Poppins, sans-serif`;
-                textWidth = ctx.measureText(text).width;
+                maxLineWidth = Math.max(...lines.map(l => ctx.measureText(l).width));
             }
-            if (textWidth > radius * 0.75) { text = text.substring(0, Math.floor(text.length * 0.8)) + '...'; }
-            ctx.fillText(text, radius * 0.85, 0);
+
+            // Draw lines
+            if (lines.length === 1) {
+                let finalLine = lines[0];
+                if (maxLineWidth > radius * 0.75) {
+                    finalLine = finalLine.substring(0, Math.floor(finalLine.length * 0.8)) + '...';
+                }
+                ctx.fillText(finalLine, radius * 0.85, 0);
+            } else {
+                const lineHeight = fontSize * 1.1;
+                // Center the lines vertically
+                const totalHeight = lines.length * lineHeight;
+                const startY = -(totalHeight / 2) + (lineHeight / 2);
+
+                lines.forEach((line, index) => {
+                    let finalLine = line;
+                    if (ctx.measureText(line).width > radius * 0.75) {
+                        finalLine = finalLine.substring(0, Math.floor(finalLine.length * 0.8)) + '...';
+                    }
+                    ctx.fillText(finalLine, radius * 0.85, startY + (index * lineHeight));
+                });
+            }
+
             ctx.restore();
         }
 
@@ -2560,6 +2637,20 @@ function confirmCreation() {
     }
 
     if (newRoul) {
+        if (appState.activeCategoryId && appState.activeCategoryId !== 'all' && appState.activeCategoryId !== 'favorites') {
+            if (!newRoul.categoryIds) newRoul.categoryIds = ['all'];
+            if (!newRoul.categoryIds.includes(appState.activeCategoryId)) {
+                newRoul.categoryIds.push(appState.activeCategoryId);
+            }
+            const activeCat = appState.categories.find(c => c.id === appState.activeCategoryId);
+            if (activeCat) {
+                if (!activeCat.rouletteOrder) activeCat.rouletteOrder = [];
+                if (!activeCat.rouletteOrder.includes(newRoul.id)) {
+                    activeCat.rouletteOrder.push(newRoul.id);
+                }
+            }
+        }
+
         appState.roulettes.push(newRoul);
         saveData();
         closeCreateModal();
